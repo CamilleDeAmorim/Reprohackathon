@@ -1,0 +1,17 @@
+Bootstrap : docker
+From : ubuntu:24.04
+
+%post
+    apt update
+    apt install -y wget unzip perl python3 python3-pip #python3-cutadapt
+    #pas recommandé mais à l'air de fonctionner :
+    python3 -m pip install --upgrade cutadapt --break-system-packages
+    wget https://github.com/FelixKrueger/TrimGalore/archive/refs/tags/0.6.10.zip
+    mv 0.6.10.zip trimGalore_0.6.10.zip
+    unzip trimGalore_0.6.10.zip
+    rm trimGalore_0.6.10.zip
+%environment
+    export PATH=/TrimGalore-0.6.10:$PATH
+
+%runscript
+    exec trim_galore "$@"
