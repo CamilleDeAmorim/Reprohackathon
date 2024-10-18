@@ -1,0 +1,15 @@
+Bootstrap : docker
+From : ubuntu:24.04
+
+%post
+    apt update
+    apt install -y wget tar bzip2 gcc libncurses5-dev zlib1g-dev libbz2-dev liblzma-dev make
+    wget https://sourceforge.net/projects/subread/files/subread-2.0.7/subread-2.0.7-Linux-x86_64.tar.gz
+    tar -xf subread-2.0.7-Linux-x86_64.tar.gz
+    rm -r subread-2.0.7-Linux-x86_64/annotation subread-2.0.7-Linux-x86_64/test
+
+%environment
+    export PATH=/subread-2.0.7-Linux-x86_64/bin:$PATH
+%runscript
+    exec featureCounts "$@"
+
