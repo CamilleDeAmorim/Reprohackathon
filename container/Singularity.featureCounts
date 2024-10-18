@@ -3,13 +3,15 @@ From : ubuntu:24.04
 
 %post
     apt update
-    apt install -y wget tar bzip2 gcc libncurses5-dev zlib1g-dev libbz2-dev liblzma-dev make
+    apt install -y wget tar
     wget https://sourceforge.net/projects/subread/files/subread-2.0.7/subread-2.0.7-Linux-x86_64.tar.gz
     tar -xf subread-2.0.7-Linux-x86_64.tar.gz
-    rm -r subread-2.0.7-Linux-x86_64/annotation subread-2.0.7-Linux-x86_64/test
+    rm -r subread-2.0.7-Linux-x86_64/annotation subread-2.0.7-Linux-x86_64/test subread-2.0.7-Linux-x86_64/doc subread-2.0.7-Linux-x86_64/README.txt subread-2.0.7-Linux-x86_64/LICENSE
+    mv subread-2.0.7-Linux-x86_64/bin/featureCounts subread-2.0.7-Linux-x86_64/featureCounts
+    rm -r subread-2.0.7-Linux-x86_64/bin/
 
 %environment
-    export PATH=/subread-2.0.7-Linux-x86_64/bin:$PATH
+    export PATH=/subread-2.0.7-Linux-x86_64:$PATH
 %runscript
     exec featureCounts "$@"
 
