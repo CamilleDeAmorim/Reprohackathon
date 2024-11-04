@@ -1,9 +1,8 @@
 Bootstrap : docker
-From : ubuntu:24.04
+From : alpine
 
 %post
-    apt update
-    apt install -y wget tar
+    apk add wget tar
     wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.1.1/sratoolkit.3.1.1-ubuntu64.tar.gz
     tar -xf sratoolkit.3.1.1-ubuntu64.tar.gz
     rm sratoolkit.3.1.1-ubuntu64.tar.gz
