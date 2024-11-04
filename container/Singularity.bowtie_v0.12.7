@@ -1,0 +1,16 @@
+Bootstrap : docker
+From : ubuntu:24.04
+
+%post
+    apt update
+    apt install -y wget unzip perl python3 # make build-base musl-dev python2-dev
+    wget https://sourceforge.net/projects/bowtie-bio/files/bowtie/0.12.7/bowtie-0.12.7-linux-x86_64.zip
+    unzip bowtie-0.12.7-linux-x86_64.zip
+    rm bowtie-0.12.7-linux-x86_64.zip
+    ls -lh /bowtie-0.12.7
+
+%environment
+    export PATH=/bowtie-0.12.7:$PATH
+%runscript
+    exec bowtie "$@"
+

@@ -1,0 +1,18 @@
+Bootstrap : docker
+From : alpine:3.15
+
+%post
+    apk add --no-cache python2 && \
+    python -m ensurepip && \
+    rm -r /usr/lib/python*/ensurepip && \
+    pip install --upgrade pip setuptools && \
+    rm -r /root/.cache
+    apk add --no-cache build-base python2-dev
+    pip install wheel
+    pip install cutadapt==1.11
+    
+%environment
+    export PATH=/:$PATH
+
+%runscript
+    exec cutadapt "$@"
