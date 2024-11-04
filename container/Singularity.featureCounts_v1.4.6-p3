@@ -1,0 +1,15 @@
+Bootstrap : docker
+From : alpine
+
+%post
+    apk add wget tar
+    wget https://sourceforge.net/projects/subread/files/subread-1.4.6-p3/subread-1.4.6-p3-Linux-x86_64.tar.gz
+    tar -xf subread-1.4.6-p3-Linux-x86_64.tar.gz
+    rm -r subread-1.4.6-p3-Linux-x86_64/annotation subread-1.4.6-p3-Linux-x86_64/test subread-1.4.6-p3-Linux-x86_64/doc subread-1.4.6-p3-Linux-x86_64/README.txt subread-1.4.6-p3-Linux-x86_64/LICENSE
+    mv subread-1.4.6-p3-Linux-x86_64/bin/featureCounts subread-1.4.6-p3-Linux-x86_64/featureCounts
+    rm -r subread-1.4.6-p3-Linux-x86_64/bin/
+
+%environment
+    export PATH=/subread-1.4.6-p3-Linux-x86_64:$PATH
+%runscript
+    exec featureCounts "$@"
