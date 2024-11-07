@@ -1,4 +1,4 @@
-Samples = ["SRX7080612", "SRX7080613", "SRX7080614", "SRX7080615", "SRX7080616", "SRX7080617"]
+Samples = ["SRX7080612", "SRX708061", "SRX7080614", "SRX7080615", "SRX7080616", "SRX7080617"]
 reference_suffixes = ["1", "2", "3", "4", "rev.1", "rev.2"]
 
 # Rule that downloads all necessary files.
@@ -78,4 +78,20 @@ rule mapping:
         """
         bowtie -p 8 -S results/03_Reference_Genome/reference <(gunzip -c {input.fastq_files}) > {output}
         """
-    
+
+#attention, non vérifiée ! 
+rule counting:
+    input:
+        bamf = expand("results/O5_mapping/{SRA_id}.bam", SRA_id=Samples),
+        genome_annotation = "results/04_Genome_Annotation/reference.gff"
+    output:
+        "results/counts.txt"
+    container:
+        "images/featureCounts.img"
+    log: 
+        "logs/counting.log"
+    threads: 40
+    shell:
+        """
+        featureCounts --extraAttributes Name -t gene -g ID -F GTF -T {threads} -a {input.genome_annotation} -o {output} {input.bamf}
+        """
