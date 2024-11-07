@@ -1,4 +1,5 @@
 Samples = ["SRX7080612", "SRX7080613", "SRX7080614", "SRX7080615", "SRX7080616", "SRX7080617"]
+reference_suffixes = ["1", "2", "3", "4", "rev.1", "rev.2"]
 
 # Rule that downloads all necessary files.
 rule all: 
@@ -6,7 +7,8 @@ rule all:
         expand("results/01_raw_data/{SRA_id}.fastq.gz", SRA_id=Samples),
         expand("results/02_Trimming_results/{SRA_id}_trimmed.fq.gz", SRA_id=Samples),
         "results/03_Reference_Genome/reference.fasta", 
-        "results/04_Genome_Annotation/reference.gff"
+        "results/04_Genome_Annotation/reference.gff",
+        expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes)
 
 # Rule that performs the trimming of FASTQ files.
 rule trim_galore:
@@ -35,7 +37,7 @@ rule reference_genome:
         wget -q -O {output} "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=CP000253.1&rettype=fasta"
         """
 
-# Rule that downloads the genome annotation.
+# Rule that downloads the genome annotation."
 rule genome_annotation:
     output:
         "results/04_Genome_Annotation/reference.gff"
@@ -46,17 +48,14 @@ rule genome_annotation:
         wget -O results/04_Genome_Annotation/reference.gff "https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?db=nuccore&report=gff3&id=CP000253.1"  &> {log}       
         """
 
-# Rule that creates the genome index.
+# Rule that creates the genome index"
 rule genome_index:
     input:
         "results/03_Reference_Genome/reference.fasta"
     output:
-        "results/03_Reference_Genome/reference.1.ebwt",
-        "results/03_Reference_Genome/reference.2.ebwt",
-        "results/03_Reference_Genome/reference.3.ebwt",
-        "results/03_Reference_Genome/reference.4.ebwt",
-        "results/03_Reference_Genome/reference.rev.1.ebwt",
-        "results/03_Reference_Genome/reference.rev.2.ebwt"
+        expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes)
+    container:
+        "images/bowtie.img"
     shell: 
         """
         bowtie-build {input} results/03_Reference_Genome/reference
