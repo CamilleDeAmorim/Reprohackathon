@@ -99,7 +99,7 @@ rule mapping:
 #attention, non vérifiée ! 
 rule counting:
     input:
-        bamf = expand("results/O5_mapping/{SRA_id}.bam", SRA_id=Samples),
+        bamf = expand("results/05_mapping/{SRA_id}.bam", SRA_id=Samples),
         genome_annotation = "results/04_Genome_Annotation/reference.gff"
     output:
         "results/counts.txt"
@@ -110,5 +110,5 @@ rule counting:
     threads: 40
     shell:
         """
-        featureCounts --extraAttributes Name -t gene -g ID -F GTF -T {threads} -a {input.genome_annotation} -o {output} {input.bamf}
+        featureCounts -t gene -g ID -s 1 -T {threads} -a {input.genome_annotation} -o {output} {input.bamf}
         """
