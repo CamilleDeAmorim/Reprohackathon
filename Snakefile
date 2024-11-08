@@ -1,7 +1,6 @@
-Samples = ["SRX7080612", "SRX708061", "SRX7080614", "SRX7080615", "SRX7080616", "SRX7080617"]
+Samples=["SRX7080612","SRX7080613","SRX7080614","SRX7080615","SRX7080616","SRX7080617"]
 reference_suffixes = ["1", "2", "3", "4", "rev.1", "rev.2"]
 
-# Rule that downloads all necessary files.
 rule all: 
     input:
         expand("results/01_raw_data/{SRA_id}.fastq.gz", SRA_id=Samples),
@@ -9,8 +8,25 @@ rule all:
         "results/03_Reference_Genome/reference.fasta", 
         "results/04_Genome_Annotation/reference.gff",
         expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
-        expand("results/05_mapping/{SRA_id}.sam", SRA_id=Samples)
-        
+        expand("results/05_mapping/{SRA_id}.bam", SRA_id=Samples),
+        expand("results/05_mapping/{SRA_id}.bai", SRA_id=Samples),
+        "results/counts.txt"
+             
+
+# Rule that download the FASTQ files required for the analysis.
+rule fasterq_dump:
+    output:
+        "results/01_raw_data/{SRA_id}.fastq.gz"
+    container:
+        "images/fasterq-dump.img"
+    log:
+        "logs/fasterq-dump/{SRA_id}.log"
+    threads: 60
+    shell:
+        """
+        fasterq-dump --threads {threads} --progress {wildcards.SRA_id} -O results/01_raw_data/ &> {log}
+        gzip -f results/01_raw_data/{wildcards.SRA_id}.fastq
+        """
 
 # Rule that performs the trimming of FASTQ files.
 rule trim_galore:
@@ -23,32 +39,32 @@ rule trim_galore:
         "images/TrimGalor.img"
     log:
         "logs/TrimGalor/{SRA_id}_trimmed.log"
-    threads: 40
+    threads: 60
     shell:
         """
         trim_galore -q 20 --phred33 --length 25 {input} -o results/02_Trimming_results/ &> {log}
-        
+        mv results/02_Trimming_results/{wildcards.SRA_id}.fastq.gz_trimming_report.txt {output.reports}
+
         """
-#mv results/02_Trimming_results/{wildcards.SRA_id}.fastq.gz_trimming_report.txt {output.reports}
 # Rule that downloads the reference genome in FASTA format.
 rule reference_genome:
     output:
         "results/03_Reference_Genome/reference.fasta"
     shell:
         """
-        wget -q -O {output} "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=CP000253.1&rettype=fasta"
+        wget -q -O  results/03_Reference_Genome/reference.fasta "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=CP000253.1&rettype=fasta"
         """
-
-# Rule that downloads the genome annotation."
-rule genome_annotation:
+# Rule that downloads the genome annotation.
+rule genome_annotation :
     output:
         "results/04_Genome_Annotation/reference.gff"
     log: 
         "logs/Genome_Annotation"
     shell:
         """
-        wget -O results/04_Genome_Annotation/reference.gff "https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?db=nuccore&report=gff3&id=CP000253.1"  &> {log}       
+        wget -O {output} "https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?db=nuccore&report=gff3&id=CP000253.1"  &> {log}       
         """
+
 
 # Rule that creates the genome index"
 rule genome_index:
@@ -63,8 +79,7 @@ rule genome_index:
         bowtie-build {input} results/03_Reference_Genome/reference
         """
 
-# Rule that map the genome
-# à verifier ! 
+# Rule that map the genome and create index
 rule mapping:
     input:
         index =  expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
@@ -72,13 +87,13 @@ rule mapping:
     output:
         bam = "results/05_mapping/{SRA_id}.bam",
         bai = "results/05_mapping/{SRA_id}.bai"
-    
+    container:
+        "images/bowtie_samtools.img"
     threads: 8
     shell: 
         """
-        apptainer exec images/bowtie -p {threads} -S results/03_Reference_Genome/{input.index} <(gunzip -c {input.fastq_files}) 
-        apptainer exec images/samtools.img samtools sort -@ {threads} -o {output.bam}
-        apptainer exec images/samtools.img samtools index {output.bam}
+        bowtie -p {threads} -S results/03_Reference_Genome/reference <(gunzip -c {input.fastq_files}) | samtools sort -@ {threads} -o {output.bam}
+        samtools index -@ {threads} -o {output.bai} {output.bam}
         """
 
 #attention, non vérifiée ! 
