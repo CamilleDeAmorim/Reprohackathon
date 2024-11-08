@@ -1,8 +1,9 @@
 Bootstrap : docker
-From : alpine
+From : ubuntu:24.04
 
 %post
-    apk add wget tar
+    apt update
+    apt install -y wget tar
     wget https://sourceforge.net/projects/subread/files/subread-1.4.6-p3/subread-1.4.6-p3-Linux-x86_64.tar.gz
     tar -xf subread-1.4.6-p3-Linux-x86_64.tar.gz
     rm -r subread-1.4.6-p3-Linux-x86_64/annotation subread-1.4.6-p3-Linux-x86_64/test subread-1.4.6-p3-Linux-x86_64/doc subread-1.4.6-p3-Linux-x86_64/README.txt subread-1.4.6-p3-Linux-x86_64/LICENSE
