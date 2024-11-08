@@ -14,11 +14,11 @@ rule fasterq_dump:
         "images/fasterq-dump.img"
     log:
         "logs/fasterq-dump/{SRA_id}.log"
-    threads: 40
+    threads: 60
     shell:
         """
         fasterq-dump --threads {threads} --progress {wildcards.SRA_id} -O results/01_raw_data/ &> {log}
-        gzip results/01_raw_data/{wildcards.SRA_id}.fastq
+        gzip -f results/01_raw_data/{wildcards.SRA_id}.fastq
         """
 # Rule that performs the trimming of FASTQ files.
 rule trim_galore:
@@ -31,7 +31,7 @@ rule trim_galore:
         "images/TrimGalor.img"
     log:
         "logs/TrimGalor/{SRA_id}_trimmed.log"
-    threads:40
+    threads: 60
     shell:
         """
         trim_galore -q 20 --phred33 --length 25 {input} -o results/02_Trimming_results/ &> {log}
@@ -44,15 +44,16 @@ rule reference_genome:
         "results/03_Reference_Genome/reference.fasta"
     shell:
         """
-        wget -q -O results/03_Reference_Genome/reference.fasta "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=CP000253.1&rettype=fasta" &> {log}
+        wget -q -O  results/03_Reference_Genome/reference.fasta "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=CP000253.1&rettype=fasta"
         """
 # Rule that downloads the genome annotation.
-rule genome_annotation:
+rule genome_annotation :
     output:
         "results/04_Genome_Annotation/reference.gff"
     log: 
         "logs/Genome_Annotation"
     shell:
         """
-        wget -O results/04_Genome_Annotation/reference.gff "https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?db=nuccore&report=gff3&id=CP000253.1"  &> {log}       
+        wget -O {output} "https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?db=nuccore&report=gff3&id=CP000253.1"  &> {log}       
         """
+

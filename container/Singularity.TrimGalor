@@ -1,9 +1,8 @@
 Bootstrap : docker
-From : alpine
-
+From : ubuntu:24.04
 %post
-    #apt update
-    apk add wget unzip perl build-base python3 python3-dev py3-pip #python3-cutadapt
+    apt update
+    apt install -y wget unzip perl python3 python3-pip #python3-cutadapt
     #pas recommandé mais à l'air de fonctionner :
     python3 -m pip install --upgrade cutadapt --break-system-packages
     wget https://github.com/FelixKrueger/TrimGalore/archive/refs/tags/0.6.10.zip
@@ -12,6 +11,5 @@ From : alpine
     rm trimGalore_0.6.10.zip
 %environment
     export PATH=/TrimGalore-0.6.10:$PATH
-
 %runscript
     exec trim_galore "$@"
