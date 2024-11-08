@@ -8,12 +8,11 @@ rule all:
         "results/03_Reference_Genome/reference.fasta", 
         "results/04_Genome_Annotation/reference.gff",
         expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
-        expand("results/05_mapping/{SRA_id}.bam", SRA_id=Samples),
-        expand("results/05_mapping/{SRA_id}.bai", SRA_id=Samples),
-        "results/counts.txt"
+        expand("results/05_Mapping_results/{SRA_id}.bam", SRA_id=Samples),
+        expand("results/05_Mapping_results/{SRA_id}.bai", SRA_id=Samples),
+        "results/06_Counting_results/counts.txt"
              
-
-# Rule that download the FASTQ files required for the analysis.
+# Rule that downloads the FASTQ files.
 rule fasterq_dump:
     output:
         "results/01_raw_data/{SRA_id}.fastq.gz"
@@ -66,7 +65,7 @@ rule genome_annotation :
         """
 
 
-# Rule that creates the genome index"
+# Rule that creates the genome index
 rule genome_index:
     input:
         "results/03_Reference_Genome/reference.fasta"
@@ -79,14 +78,14 @@ rule genome_index:
         bowtie-build {input} results/03_Reference_Genome/reference
         """
 
-# Rule that map the genome and create index
+# Rule that maps the genome and creates an index
 rule mapping:
     input:
         index =  expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
         fastq_files = "results/02_Trimming_results/{SRA_id}_trimmed.fq.gz"
     output:
-        bam = "results/05_mapping/{SRA_id}.bam",
-        bai = "results/05_mapping/{SRA_id}.bai"
+        bam = "results/05_Mapping_results/{SRA_id}.bam",
+        bai = "results/05_Mapping_results/{SRA_id}.bai"
     container:
         "images/bowtie_samtools.img"
     threads: 8
@@ -96,13 +95,13 @@ rule mapping:
         samtools index -@ {threads} -o {output.bai} {output.bam}
         """
 
-#attention, non vérifiée ! 
+# Rule that counts the number of reads mapped on each gene.
 rule counting:
     input:
-        bamf = expand("results/05_mapping/{SRA_id}.bam", SRA_id=Samples),
+        bamf = expand("results/05_Mapping_results/{SRA_id}.bam", SRA_id=Samples),
         genome_annotation = "results/04_Genome_Annotation/reference.gff"
     output:
-        "results/counts.txt"
+        "results/06_Counting_results/counts.txt"
     container:
         "images/featureCounts.img"
     log: 
