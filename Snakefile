@@ -64,19 +64,21 @@ rule genome_index:
         """
 
 # Rule that map the genome
-# attention, à finir avec les commandes samtools
+# à verifier ! 
 rule mapping:
     input:
         index =  expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
         fastq_files = "results/02_Trimming_results/{SRA_id}_trimmed.fq.gz"
     output:
-        "results/05_mapping/{SRA_id}.sam"
-    container:
-        "images/bowtie_samtools.img"
-    threads: 40
+        bam = "results/05_mapping/{SRA_id}.bam",
+        bai = "results/05_mapping/{SRA_id}.bai"
+    
+    threads: 8
     shell: 
         """
-        bowtie -p 8 -S results/03_Reference_Genome/reference <(gunzip -c {input.fastq_files}) > {output}
+        apptainer exec images/bowtie -p {threads} -S results/03_Reference_Genome/{input.index} <(gunzip -c {input.fastq_files}) 
+        apptainer exec images/samtools.img samtools sort -@ {threads} -o {output.bam}
+        apptainer exec images/samtools.img samtools index {output.bam}
         """
 
 #attention, non vérifiée ! 
