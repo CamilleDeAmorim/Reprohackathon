@@ -4,7 +4,7 @@ reference_suffixes = ["1", "2", "3", "4", "rev.1", "rev.2"]
 rule all: 
     input:
         expand("results/01_raw_data/{SRA_id}.fastq.gz", SRA_id=Samples),
-        expand("results/02_Trimming_results/{SRA_id}_trimmed.fq.gz", SRA_id=Samples),
+        expand("results/02_Trimming_results/{SRA_id}_trimmed.fastq.gz", SRA_id=Samples),
         "results/03_Reference_Genome/reference.fasta", 
         "results/04_Genome_Annotation/reference.gff",
         expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
@@ -20,7 +20,7 @@ rule fasterq_dump:
         "images/fasterq-dump.img"
     log:
         "logs/fasterq-dump/{SRA_id}.log"
-    threads: 60
+    threads: 20
     shell:
         """
         fasterq-dump --threads {threads} --progress {wildcards.SRA_id} -O results/01_raw_data/ &> {log}
@@ -28,22 +28,19 @@ rule fasterq_dump:
         """
 
 # Rule that performs the trimming of FASTQ files.
-rule trim_galore:
+rule cutadapt:
     input:
         "results/01_raw_data/{SRA_id}.fastq.gz"
     output: 
-        trimmed_fastq="results/02_Trimming_results/{SRA_id}_trimmed.fq.gz",
-        reports="results/02_Trimming_results/{SRA_id}_trimming_report.txt"
+        trimmed_fastq="results/02_Trimming_results/{SRA_id}_trimmed.fastq.gz",
     container:
-        "images/TrimGalor.img"
+        "images/cutadapt_v1.11.img"
     log:
-        "logs/TrimGalor/{SRA_id}_trimmed.log"
-    threads: 60
+        "logs/cutadapt/{SRA_id}_trimmed.log"
+    threads: 20
     shell:
         """
-        trim_galore -q 20 --phred33 --length 25 {input} -o results/02_Trimming_results/ &> {log}
-        mv results/02_Trimming_results/{wildcards.SRA_id}.fastq.gz_trimming_report.txt {output.reports}
-
+        cutadapt -o results/02_Trimming_results/{wildcards.SRA_id}_trimmed.fastq.gz {input} -a AGATCGGAAGAGC -q 20 -m 25 > results/02_Trimming_results/{wildcards.SRA_id}_trimming_report.txt
         """
 # Rule that downloads the reference genome in FASTA format.
 rule reference_genome:
@@ -72,7 +69,7 @@ rule genome_index:
     output:
         "results/03_Reference_Genome/reference.{suffixe}.ebwt"
     container:
-        "images/bowtie.img"
+        "images/bowtie_v0.12.7_samtools.img"
     shell: 
         """
         bowtie-build {input} results/03_Reference_Genome/reference
@@ -82,12 +79,12 @@ rule genome_index:
 rule mapping:
     input:
         index =  expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
-        fastq_files = "results/02_Trimming_results/{SRA_id}_trimmed.fq.gz"
+        fastq_files = "results/02_Trimming_results/{SRA_id}_trimmed.fastq.gz"
     output:
         bam = "results/05_Mapping_results/{SRA_id}.bam",
         bai = "results/05_Mapping_results/{SRA_id}.bai"
     container:
-        "images/bowtie_samtools.img"
+        "images/bowtie_v0.12.7_samtools.img"
     threads: 8
     shell: 
         """
@@ -103,10 +100,10 @@ rule counting:
     output:
         "results/06_Counting_results/counts.txt"
     container:
-        "images/featureCounts.img"
+        "images/featureCounts_v1.4.6-p3.img"
     log: 
         "logs/counting.log"
-    threads: 40
+    threads: 20
     shell:
         """
         featureCounts -t gene -g ID -s 1 -T {threads} -a {input.genome_annotation} -o {output} {input.bamf}
