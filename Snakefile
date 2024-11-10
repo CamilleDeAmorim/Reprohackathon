@@ -17,7 +17,7 @@ rule fasterq_dump:
     output:
         "results/01_raw_data/{SRA_id}.fastq.gz"
     container:
-        "images/fasterq-dump.img"
+        "https://zenodo.org/records/13994690/files/fasterq-dump.img?download=1"
     log:
         "logs/fasterq-dump/{SRA_id}.log"
     threads: 20
@@ -34,7 +34,7 @@ rule cutadapt:
     output: 
         trimmed_fastq="results/02_Trimming_results/{SRA_id}_trimmed.fastq.gz",
     container:
-        "images/cutadapt_v1.11.img"
+        "https://zenodo.org/records/13994994/files/cutadapt_v1.11.img?download=1"
     log:
         "logs/cutadapt/{SRA_id}_trimmed.log"
     threads: 20
@@ -69,7 +69,7 @@ rule genome_index:
     output:
         "results/03_Reference_Genome/reference.{suffixe}.ebwt"
     container:
-        "images/bowtie_v0.12.7_samtools.img"
+        "https://zenodo.org/records/13994994/files/bowtie_v0.12.7_samtools.img?download=1"
     shell: 
         """
         bowtie-build {input} results/03_Reference_Genome/reference
@@ -84,7 +84,7 @@ rule mapping:
         bam = "results/05_Mapping_results/{SRA_id}.bam",
         bai = "results/05_Mapping_results/{SRA_id}.bai"
     container:
-        "images/bowtie_v0.12.7_samtools.img"
+        "https://zenodo.org/records/13994994/files/bowtie_v0.12.7_samtools.img?download=1"
     threads: 8
     shell: 
         """
@@ -100,7 +100,7 @@ rule counting:
     output:
         "results/06_Counting_results/counts.txt"
     container:
-        "images/featureCounts_v1.4.6-p3.img"
+        "https://zenodo.org/records/13994994/files/featureCounts_v1.4.6-p3.img?download=1"
     log: 
         "logs/counting.log"
     threads: 20
