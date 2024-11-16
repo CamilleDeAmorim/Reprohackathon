@@ -1,0 +1,31 @@
+Bootstrap: docker
+From: rocker/tidyverse:3.4.1
+
+%post
+    # Installer les dépendances nécessaires pour DESeq2 et ses packages R
+    apt-get update && apt-get install -y libxml2-dev libcurl4-openssl-dev libssl-dev
+
+    # Installer DESeq2 et ses dépendances
+    R -e "install.packages('BiocInstaller', repos = 'https://bioconductor.org/packages/3.5/bioc'); library(BiocInstaller); \
+          install.packages('https://cran.r-project.org/src/contrib/Archive/rlang/rlang_0.4.0.tar.gz', repo=NULL, type='source'); \
+          install.packages('https://cran.r-project.org/src/contrib/Archive/zeallot/zeallot_0.0.2.tar.gz', repo=NULL, type='source'); \
+          BiocInstaller::biocLite(c('backports','digest','glue','ellipsis'), suppressUpdates=TRUE);\
+          install.packages('https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.2.1.tar.gz', repo=NULL, type='source');\
+          BiocInstaller::biocLite('RCurl', suppressUpdates=TRUE);\
+          install.packages('https://cran.r-project.org/src/contrib/Archive/RSQLite/RSQLite_1.1-1.tar.gz',repos = NULL, type = 'source');\
+          install.packages('https://www.bioconductor.org/packages/3.5/bioc/src/contrib/AnnotationDbi_1.38.2.tar.gz',repos = NULL, type = 'source');\
+          BiocInstaller::biocLite('genefilter', suppressUpdates=TRUE);\
+          BiocInstaller::biocLite('geneplotter',suppressUpdates=TRUE );\
+          BiocInstaller::biocLite(c('bit', 'bitops', 'formatR', 'bit64', 'blob', 'plogr','GenomeInfoDbData','zlibbioc','matrixStats', \
+          'lambda.r', 'futile.options', 'DBI', 'xtable', 'GenomeInfoDb', 'XVector', 'DelayedArray', 'futile.logger', \
+          'snow', 'BH', 'annotate'),suppressUpdates=TRUE);\
+          BiocInstaller::biocLite(c('S4Vectors', 'IRanges', 'GenomicRanges', 'SummarizedExperiment', 'BiocGenerics', 'Biobase',\
+          'BiocParallel', 'Rcpp', 'RcppArmadillo'), suppressUpdates=TRUE);\
+          install.packages('https://cran.r-project.org/src/contrib/Archive/locfit/locfit_1.5-9.1.tar.gz', repos = NULL, type = 'source');\
+          install.packages('https://www.bioconductor.org/packages/3.5/bioc/src/contrib/DESeq2_1.16.1.tar.gz', repos = NULL, type = 'source');\
+          install.packages('https://bioconductor.org/packages/3.5/bioc/src/contrib/impute_1.50.1.tar.gz', repos = NULL, type = 'source');"
+
+%environment
+     export PATH=/:$PATH
+%runscript
+     exec Rscript "$@"
