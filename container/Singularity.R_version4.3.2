@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: rocker/r-ver:4.3.2
+
+%post
+    # Met à jour les dépôts et installe les dépendances système nécessaires
+    apt-get update && apt-get install -y \
+        wget \
+        tar \
+        bash \
+        cmake \
+        libcurl4-openssl-dev \
+        libxml2-dev \
+        libssl-dev \
+        zlib1g-dev
+
+    # Installe KEGGREST depuis Bioconductor
+    R -e "install.packages('BiocManager', repos='https://cran.r-project.org'); \
+          BiocManager::install('KEGGREST')"
+
+    # Installe les packages R requis
+    R -e "install.packages('nloptr', repos='https://cran.r-project.org', type='source'); \
+          install.packages('pbkrtest', repos='https://cran.r-project.org', type='source'); \
+          install.packages('factoextra', repos='https://cran.r-project.org', type='source');"
+
+%environment
+    # Définit les variables d'environnement pour R
+    export R_LIBS_USER=/usr/local/lib/R/site-library
+
+%runscript
+    exec R "$@"
