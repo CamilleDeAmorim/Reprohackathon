@@ -24,7 +24,8 @@ dds <- DESeqDataSetFromMatrix(countData = counts_matrix,
 dds <- DESeq(dds)
 results <- results(dds)
 results$geneID <- rownames(results)
-results <- na.omit(results) #retirer les valeurs NA
+results <- as.data.frame(results) #retirer les valeurs NA
+results <- na.omit(results)
 
 # Nombre total de gènes significatifs, sur et sous exprimés
 n_significant <- nrow(results[results$padj < 0.05 , ])
@@ -38,49 +39,29 @@ cat("Nombre de gènes sous-exprimés :", n_downregulated, "\n")
 
 #### Volcano plot ####
 
-# groupes en fonction de si non significatifs, sur ou sous régulé
+# Groupes basés sur la significativité et la direction de l'expression
 results$group <- "Non-significant"
 results$group[results$padj < 0.05 & results$log2FoldChange > 0] <- "Upregulated"
 results$group[results$padj < 0.05 & results$log2FoldChange < 0] <- "Downregulated"
 
-ggplot(results, aes(x = log2FoldChange, y = -log10(padj), color = group)) +
+# Création du volcano plot
+volcano_plot <- ggplot(results, aes(x = log2FoldChange, y = -log10(padj), color = group)) +
   geom_point(alpha = 0.8, size = 2) +
-  scale_color_manual(values = c("Non-significant" = "grey", "Upregulated" = "red", "Downregulated" = "blue")) +
-  labs(title = "p-value ajustée en fonction du log2FC", x = "Log2 Fold Change", y = "-Log10(padj)", color = "Gene Status") +
+  scale_color_manual(values = c("Non-significant" = "grey", 
+                                "Upregulated" = "red", 
+                                "Downregulated" = "blue")) +
+  labs(title = "p-value ajustée en fonction du log2FC", 
+       x = "Log2 Fold Change", 
+       y = "-Log10(padj)", 
+       color = "Gene Status") +
   theme_minimal() +
   theme(legend.position = "right",
-        panel.border = element_rect(color = "black", fill = NA, linewidth = 1))
-ggsave("Volcano_plot.pdf", dpi = 300, width = 8, height = 6)
+        panel.border = element_rect(color = "black", fill = NA, size = 1)) # Utilisation de 'size' pour la bordure
 
 
-#### MA plots ####
-results$significant <- results$padj < 0.05  # Identifier les gènes significatifs
+# Sauvegarder le volcano plot en PDF
+ggsave("Volcano_plot.pdf", plot = volcano_plot, dpi = 300, width = 8, height = 6)
 
-# Ajustement des logFC pour ne pas afficher les trops grands ou trop petits
-results$adjusted_log2FC <- pmin(pmax(results$log2FoldChange, -4.1), 4.1)
-# forme du point
-results$shape <- ifelse(results$log2FoldChange > 4.1, "triangle_up",
-                                 ifelse(results$log2FoldChange < -4.1, "triangle_down", "circle"))
-
-ggplot(results, aes(x = baseMean, y = adjusted_log2FC)) +
-  geom_point(aes(color = significant, fill = significant, shape = shape), 
-             size = 1.5, alpha = 0.7) +
-  geom_hline(yintercept = 0, linetype = "dotted", color = "black", linewidth = 0.8) +
-  scale_color_manual(values = c("black", "red"), 
-                     labels = c("Non-significant", "Significant"), 
-                     name = "Gene Status") + 
-  scale_fill_manual(values = c("black", "red"), guide = "none") + #guide = none : pour enlever de la légende
-  scale_shape_manual(values = c("circle" = 16, "triangle_up" = 24, "triangle_down" = 25), 
-                     guide = "none") + 
-  scale_x_log10() +
-  coord_cartesian(ylim = c(-4.2, 4.2)) +
-  labs(title = "Log2 Fold Change vs Mean Counts",
-       x = "Mean Counts (log scale)",
-       y = "Log2 Fold Change") + 
-  theme_minimal() +
-  theme(legend.position = "right",
-        panel.border = element_rect(color = "black", fill = NA, linewidth = 1))
-ggsave("MA_plot.pdf", dpi = 300, width = 10, height = 6)
 
 ## MA plot traduction ##
 library(KEGGREST)
