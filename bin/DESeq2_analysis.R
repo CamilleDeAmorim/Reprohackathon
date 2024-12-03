@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
+#args = fichier de comptage - fichier avec gènes liés traduction - fichier avec gènes lié tRNA - dossier pour les résultats
 default_args = c("results/counts.txt", "assets/translation_genes.txt", "assets/tRNA_synthetases_genes.txt", "results/06_Stats")
 
 # test if there is are arguments ; if not by default arguments are used
@@ -25,7 +26,6 @@ library(ggplot2)
 counts_data <- read.table(counts_file, skip = 1, header = T, sep = '\t')
 gene_translation <- read.table(gene_trans_f, header = F)[,1]
 gene_tRNA <- read.table(gene_tRNA_f, header = F)[,1]
-
 
 ## Mise en forme données ##
 # Sélection des colonnes nécessaires
@@ -143,7 +143,7 @@ ggplot(results_translation, aes(x = log2(baseMean), y = log2FoldChange)) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
-  labs(title = "Log2 Fold Change vs Mean Counts",
+  labs(title = "Log2 Fold Change vs Mean Counts \n analyse done only on translation genes",
        x = "log2(Mean Counts)",
        y = "Log2 Fold Change",
        color = "Significant") +
@@ -167,7 +167,7 @@ ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
-  labs(title = "Log2 Fold Change vs Mean Counts",
+  labs(title = "Log2 Fold Change vs Mean Counts\n analyse done only on all genes",
        x = "log2(Mean Counts)",
        y = "Log2 Fold Change",
        color = "Significant") +
