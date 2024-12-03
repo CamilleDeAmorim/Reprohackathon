@@ -1,7 +1,31 @@
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
+
+default_args = c("results/counts.txt", "assets/translation_genes.txt", "assets/tRNA_synthetases_genes.txt", "results/06_Stats")
+
+# test if there is are arguments ; if not by default arguments are used
+print(length(args))
+if (length(args)<4) {  
+     args[length(args)+1:4] <- default_args[length(args)+1:4]
+} 
+
+counts_file = args[1]
+gene_trans_f = args[2]
+gene_tRNA_f = args[3]
+results_directory = args[4] 
+
+volcano_file = paste(results_directory,"/Volcano_plot.png", sep = "")
+MAplot_file = paste(results_directory,"/MA_plot.png", sep = "")
+MAplot_translation_file1 = paste(results_directory,"/MA_plot_translation1.png", sep = "")
+MAplot_translation_file2 = paste(results_directory,"/MA_plot_translation2.png", sep = "")
+
 #### Chargement données et librairies ####
 library(DESeq2)
 library(ggplot2)
-counts_data <- read.table("counts.txt", header = T)
+counts_data <- read.table(counts_file, skip = 1, header = T, sep = '\t')
+gene_translation <- read.table(gene_trans_f, header = F)[,1]
+gene_tRNA <- read.table(gene_tRNA_f, header = F)[,1]
+
 
 ## Mise en forme données ##
 # Sélection des colonnes nécessaires
@@ -56,31 +80,43 @@ volcano_plot <- ggplot(results, aes(x = log2FoldChange, y = -log10(padj), color 
        color = "Gene Status") +
   theme_minimal() +
   theme(legend.position = "right",
-        panel.border = element_rect(color = "black", fill = NA, size = 1)) # Utilisation de 'size' pour la bordure
+        panel.border = element_rect(color = "black", fill = NA, size = 1))
 
 
-# Sauvegarder le volcano plot en PDF
-ggsave("Volcano_plot.pdf", plot = volcano_plot, dpi = 300, width = 8, height = 6)
+# Sauvegarder le volcano plot en PNG
+ggsave(volcano_file, plot = volcano_plot, dpi = 300, width = 8, height = 6)
+
+
+### MA plots ###
+results$significant <- results$padj < 0.05  # Identifier les gènes significatifs
+
+# Ajustement des logFC pour ne pas avoir de valeurs au dessus de 4,1 ou en dessous de -4,1
+results$adjusted_log2FC <- pmin(pmax(results$log2FoldChange, -4.1), 4.1)
+results$shape <- ifelse(results$log2FoldChange > 4.1, "triangle_up",
+                                 ifelse(results$log2FoldChange < -4.1, "triangle_down", "circle"))
+
+ggplot(results, aes(x = baseMean, y = adjusted_log2FC)) +
+  geom_point(aes(color = significant, fill = significant, shape = shape), 
+             size = 1.5, alpha = 0.7) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black", size = 0.8) +
+  scale_color_manual(values = c("black", "red"), 
+                     labels = c("Non-significant", "Significant"), 
+                     name = "Gene Status") + 
+  scale_fill_manual(values = c("black", "red"), guide = "none") + #guide = none : pour enlever de la légende
+  scale_shape_manual(values = c("circle" = 16, "triangle_up" = 24, "triangle_down" = 25), 
+                     guide = "none") + 
+  scale_x_log10() +
+  coord_cartesian(ylim = c(-4.2, 4.2)) +
+  labs(title = "Log2 Fold Change vs Mean Counts",
+       x = "Mean Counts (log scale)",
+       y = "Log2 Fold Change") + 
+  theme_minimal() +
+  theme(legend.position = "right",
+        panel.border = element_rect(color = "black", fill = NA, size = 1))
+ggsave(MAplot_file, dpi = 300, width = 10, height = 6)
 
 
 ## MA plot traduction ##
-library(KEGGREST)
-
-#Les ids impliqués dans la traduction : 
-# "RNA polymerase - Staphylococcus aureus subsp. aureus NCTC8325" 
-#sao03010 
-#"Ribosome - Staphylococcus aureus subsp. aureus NCTC8325" 
-#sao00970 
-#"Aminoacyl-tRNA biosynthesis - Staphylococcus aureus subsp. aureus NCTC8325" 
-#sao03060 
-
-#sélection des gènes impliqués dans la traduction
-genesList03010 = gsub("sao:","gene-", keggLink("sao03010")[-1,2])
-genesList00970 = gsub("sao:","gene-", keggLink("sao00970")[-1,2])
-genesList03060 = gsub("sao:","gene-", keggLink("sao03060")[-1,2])
-
-gene_translation = c(genesList03010,genesList00970, genesList03060)
-gene_tRNA = genesList00970[-grep("T", genesList00970)]
 
 ## version 1 : en refaisant toute l'analyse juste pour ce set de gènes ##
 counts_matrix_translation <- counts_matrix[rownames(counts_matrix) %in% gene_translation,] 
@@ -92,6 +128,7 @@ dds_trans <- DESeqDataSetFromMatrix(countData = counts_matrix_translation,
 dds_trans <- DESeq(dds_trans)
 results_translation <- results(dds_trans)
 results_translation$geneID <- rownames(results_translation)
+results_translation <- as.data.frame(results_translation)
 results_translation <- na.omit(results_translation) #retirer les valeurs NA
 
 results_translation$significant <- results_translation$padj < 0.05  # Identifier les gènes significatifs
@@ -102,7 +139,7 @@ ggplot(results_translation, aes(x = log2(baseMean), y = log2FoldChange)) +
   geom_point(data = results_translation[rownames(results_translation) %in% gene_tRNA, ],
              aes(x = log2(baseMean), y = log2FoldChange),
              shape = 21, size = 2, color = "black", fill = NA, stroke = 1.2) +
-  geom_hline(yintercept = 0, linetype = "dotted", color = "grey20", linewidth = 0.8) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "grey20", size = 0.8) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
@@ -112,9 +149,9 @@ ggplot(results_translation, aes(x = log2(baseMean), y = log2FoldChange)) +
        color = "Significant") +
   theme_minimal() +
   theme(legend.position = "right",
-        panel.border = element_rect(color = "grey20", fill = NA, linewidth = 1))
+        panel.border = element_rect(color = "grey20", fill = NA, size = 1))
 
-ggsave("MA_plot_translation.pdf", dpi = 300, width = 7.3, height = 6)
+ggsave(MAplot_translation_file1, dpi = 300, width = 7.3, height = 6)
 
 
 ## version 2 : juste en récupérant les résultats de l'analyse globale
@@ -126,7 +163,7 @@ ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
   geom_point(data = results_translation2[rownames(results_translation2) %in% gene_tRNA, ],
              aes(x = log2(baseMean), y = log2FoldChange),
              shape = 21, size = 2, color = "black", fill = NA, stroke = 1.2) +
-  geom_hline(yintercept = 0, linetype = "dotted", color = "grey20", linewidth = 0.8) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "grey20", size = 0.8) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
@@ -136,5 +173,5 @@ ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
        color = "Significant") +
   theme_minimal() +
   theme(legend.position = "right",
-        panel.border = element_rect(color = "grey20", fill = NA, linewidth = 1))
-ggsave("MA_plot_translation2.pdf", dpi = 300, width = 7.3, height = 6)
+        panel.border = element_rect(color = "grey20", fill = NA, size = 1))
+ggsave(MAplot_translation_file2, dpi = 300, width = 7.3, height = 6)
