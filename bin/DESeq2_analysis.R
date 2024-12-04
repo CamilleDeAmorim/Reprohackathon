@@ -2,7 +2,7 @@
 args = commandArgs(trailingOnly=TRUE)
 
 #args = fichier de comptage - fichier avec gènes liés traduction - fichier avec gènes lié tRNA - dossier pour les résultats
-default_args = c("results/counts.txt", "assets/translation_genes.txt", "assets/tRNA_synthetases_genes.txt", "results/06_Stats")
+default_args = c("results/06_counting_results/counts.txt", "assets/translation_genes.txt", "assets/tRNA_synthetases_genes.txt", "results/07_Final_Results")
 
 # test if there is are arguments ; if not by default arguments are used
 print(length(args))

@@ -10,7 +10,13 @@ rule all:
         expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
         expand("results/05_Mapping_results/{SRA_id}.bam", SRA_id=Samples),
         expand("results/05_Mapping_results/{SRA_id}.bai", SRA_id=Samples),
-        "results/06_Counting_results/counts.txt"
+        "results/06_Counting_results/counts.txt",
+        "assets/tRNA_synthetases_genes.txt",
+        "assets/translation_genes.txt",
+        "results/07_Final_results/MA_plot.png",
+        "results/07_Final_results/MA_plot_translation1.png",
+        "results/07_Final_results/MA_plot_translation2.png",
+        "results/07_Final_results/Volcano_plot.png"
              
 # Rule that downloads the FASTQ files.
 rule fasterq_dump:
@@ -108,4 +114,29 @@ rule counting:
         """
         featureCounts -t gene -g ID -s 1 -T {threads} -a {input.genome_annotation} -o {output} {input.bamf}
         """
-
+rule Download_KEGG_Genes:
+    output:
+        "assets/tRNA_synthetases_genes.txt",
+        "assets/translation_genes.txt"
+    container:
+        "images/R_new_version.img"
+    shell:
+        """
+        Rscript bin/Download_KEGG_Genes.R
+        """
+rule DESeq2_analysis:
+    input:
+        counts="results/06_Counting_results/counts.txt",
+        translation_genes="assets/translation_genes.txt",
+        tRNA_genes="assets/tRNA_synthetases_genes.txt"
+    output:
+        ma_plot="results/07_Final_results/MA_plot.png",
+        ma_plot_translation1="results/07_Final_results/MA_plot_translation1.png",
+        ma_plot_translation2="results/07_Final_results/MA_plot_translation2.png",
+        volcano_plot="results/07_Final_results/Volcano_plot.png"
+    container:
+        "images/DESeq2_v1.16.1.img"
+    shell:
+        """
+        Rscript bin/DESeq2_analysis.R {input.counts} {input.translation_genes} {input.tRNA_genes} results/07_Final_results/
+        """
