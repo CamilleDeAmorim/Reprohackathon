@@ -4,3 +4,6 @@ logs
 .ncbi
 results
 fasterq*
+assets/tRNA_synthetases_genes.txt
+assets/translation_genes.txt
+ncbi*
