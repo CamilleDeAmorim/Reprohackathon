@@ -13,10 +13,10 @@ rule all:
         "results/06_Counting_results/counts.txt",
         "assets/tRNA_synthetases_genes.txt",
         "assets/translation_genes.txt",
-        "results/07_Final_results/MA_plot.png",
-        "results/07_Final_results/MA_plot_translation1.png",
-        "results/07_Final_results/MA_plot_translation2.png",
-        "results/07_Final_results/Volcano_plot.png"
+        "results/07_Final_results/DESeq2_Results/MA_plot.png",
+        "results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
+        "results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
+        "results/07_Final_results/DESeq2_Results/Volcano_plot.png"
              
 # Rule that downloads the FASTQ files.
 rule fasterq_dump:
@@ -130,13 +130,13 @@ rule DESeq2_analysis:
         translation_genes="assets/translation_genes.txt",
         tRNA_genes="assets/tRNA_synthetases_genes.txt"
     output:
-        ma_plot="results/07_Final_results/MA_plot.png",
-        ma_plot_translation1="results/07_Final_results/MA_plot_translation1.png",
-        ma_plot_translation2="results/07_Final_results/MA_plot_translation2.png",
-        volcano_plot="results/07_Final_results/Volcano_plot.png"
+        ma_plot="results/07_Final_results/DESeq2_Results/MA_plot.png",
+        ma_plot_translation1="results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
+        ma_plot_translation2="results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
+        volcano_plot="results/07_Final_results/DESeq2_Results/Volcano_plot.png"
     container:
         "images/DESeq2_v1.16.1.img"
     shell:
         """
-        Rscript bin/DESeq2_analysis.R {input.counts} {input.translation_genes} {input.tRNA_genes} results/07_Final_results/
+        Rscript bin/DESeq2_analysis.R {input.counts} {input.translation_genes} {input.tRNA_genes} results/07_Final_results/DESeq2_Results/
         """
