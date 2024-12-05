@@ -1,36 +1,47 @@
 #!/usr/bin/env Rscript
+rm(list=ls())
 args = commandArgs(trailingOnly=TRUE)
 
-#args = fichier de comptage - fichier avec gènes liés traduction - fichier avec gènes lié tRNA - dossier pour les résultats
-default_args = c("results/06_counting_results/counts.txt", "assets/translation_genes.txt", "assets/tRNA_synthetases_genes.txt", "results/07_Final_Results")
+#arguments par défaut 
+default_args = c("results/06_Counting_results/counts.txt", #fichier de comptage
+               "assets/translation_genes.txt", #fichier avec gènes liés traduction
+               "assets/tRNA_synthetases_genes.txt", # fichier avec gènes lié tRNA
+               "assets/GeneSpecificInformation_NCTC8325.txt", #fichier de correspondance des noms de gènes
+               "results/07_Final_results/") # dossier pour les résultats
 
-# test if there is are arguments ; if not by default arguments are used
-print(length(args))
-if (length(args)<4) {  
-     args[length(args)+1:4] <- default_args[length(args)+1:4]
+# test if there are arguments ; if not by default arguments are used
+if (length(args)<length(default_args)) {  
+     args[length(args)+1:length(default_args)] <- default_args[length(args)+1:length(default_args)]
 } 
 
 counts_file = args[1]
 gene_trans_f = args[2]
 gene_tRNA_f = args[3]
-results_directory = args[4] 
+gene_corres_f = args[4]
+results_directory = args[length(args)] 
 
-volcano_file = paste(results_directory,"/Volcano_plot.png", sep = "")
-MAplot_file = paste(results_directory,"/MA_plot.png", sep = "")
-MAplot_translation_file1 = paste(results_directory,"/MA_plot_translation1.png", sep = "")
-MAplot_translation_file2 = paste(results_directory,"/MA_plot_translation2.png", sep = "")
+volcano_file = paste(results_directory,"Volcano_plot.png", sep = "")
+MAplot_file = paste(results_directory,"MA_plot.png", sep = "")
+MAplot_translation_file1 = paste(results_directory,"MA_plot_translation1.png", sep = "")
+MAplot_translation_file2 = paste(results_directory,"MA_plot_translation2.png", sep = "")
 
 #### Chargement données et librairies ####
 library(DESeq2)
 library(ggplot2)
 counts_data <- read.table(counts_file, skip = 1, header = T, sep = '\t')
+counts_data$Geneid <- gsub("gene-","", counts_data$Geneid)
 gene_translation <- read.table(gene_trans_f, header = F)[,1]
 gene_tRNA <- read.table(gene_tRNA_f, header = F)[,1]
+gene_corres <- read.table(gene_corres_f, skip = 1, blank.lines.skip=TRUE, nrows=4116)
+colnames(gene_corres) <- c("Geneid", "GeneName")
+
+a_afficher <- c("frr", "infA", "infB", "infC", "tsf", "pth")
 
 ## Mise en forme données ##
 # Sélection des colonnes nécessaires
 counts_matrix <- counts_data[, 7:ncol(counts_data)] 
 # Utiliser 'Geneid' comme noms de lignes
+counts_data$Geneid <- gsub("gene-","", counts_data$Geneid)
 rownames(counts_matrix) <- counts_data$Geneid
 
 #  Tableau des conditions
@@ -47,9 +58,9 @@ dds <- DESeqDataSetFromMatrix(countData = counts_matrix,
 # Normalisation et analyse différentielle
 dds <- DESeq(dds)
 results <- results(dds)
-results$geneID <- rownames(results)
-results <- as.data.frame(results) #retirer les valeurs NA
-results <- na.omit(results)
+results <- as.data.frame(results) 
+results$Geneid <- row.names(results) 
+results <- na.omit(results) #retirer les valeurs NA
 
 # Nombre total de gènes significatifs, sur et sous exprimés
 n_significant <- nrow(results[results$padj < 0.05 , ])
@@ -82,8 +93,7 @@ volcano_plot <- ggplot(results, aes(x = log2FoldChange, y = -log10(padj), color 
   theme(legend.position = "right",
         panel.border = element_rect(color = "black", fill = NA, size = 1))
 
-
-# Sauvegarder le volcano plot en PNG
+#sauvgarde données
 ggsave(volcano_file, plot = volcano_plot, dpi = 300, width = 8, height = 6)
 
 
@@ -127,23 +137,34 @@ dds_trans <- DESeqDataSetFromMatrix(countData = counts_matrix_translation,
                                     design = ~ condition)
 dds_trans <- DESeq(dds_trans)
 results_translation <- results(dds_trans)
-results_translation$geneID <- rownames(results_translation)
 results_translation <- as.data.frame(results_translation)
+results_translation$Geneid <- row.names(results_translation)
 results_translation <- na.omit(results_translation) #retirer les valeurs NA
 
 results_translation$significant <- results_translation$padj < 0.05  # Identifier les gènes significatifs
+results_translation <- merge(results_translation, gene_corres, by = "Geneid", all.x=TRUE, all.y=F) #ajouter les noms des gènes
 
 # Plot
 ggplot(results_translation, aes(x = log2(baseMean), y = log2FoldChange)) +
   geom_point(aes(color = significant), size = 2, alpha = 0.9) +
-  geom_point(data = results_translation[rownames(results_translation) %in% gene_tRNA, ],
+  # Ajouter les contours noirs pour les gènes tRNA
+  geom_point(data = results_translation[results_translation$Geneid %in% gene_tRNA, ],
              aes(x = log2(baseMean), y = log2FoldChange),
              shape = 21, size = 2, color = "black", fill = NA, stroke = 1.2) +
+  # Ajouter les segments entre les gènes et les noms
+  geom_segment(data = results_translation[results_translation$GeneName %in% a_afficher, ],
+               aes(x = log2(baseMean), y = log2FoldChange, 
+                   xend = log2(baseMean) + 0.2, yend = log2FoldChange + 0.2),
+               color = "black", size = 0.7) +
+  # Ajouter les noms des gènes
+  geom_text(data = results_translation[results_translation$GeneName %in% a_afficher, ],
+            aes(label = GeneName),
+            size = 4, vjust = -0.5, hjust = 0, nudge_x = 0.2, nudge_y = 0.2, color = "black") +
   geom_hline(yintercept = 0, linetype = "dotted", color = "grey20", size = 0.8) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
-  labs(title = "Log2 Fold Change vs Mean Counts \n analyse done only on translation genes",
+  labs(title = "Log2 Fold Change vs Mean Counts\n analyse done on all genes",
        x = "log2(Mean Counts)",
        y = "Log2 Fold Change",
        color = "Significant") +
@@ -155,23 +176,35 @@ ggsave(MAplot_translation_file1, dpi = 300, width = 7.3, height = 6)
 
 
 ## version 2 : juste en récupérant les résultats de l'analyse globale
-results_translation2 <- results[results$geneID %in% gene_translation,]
+results_translation2 <- results[results$Geneid %in% gene_translation,]
+results_translation2 <- merge(results_translation2, gene_corres, by = "Geneid", all.x=TRUE, all.y=F) #ajouter les noms des gènes
 
 # plot
 ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
   geom_point(aes(color = significant), size = 2, alpha = 0.9) +
-  geom_point(data = results_translation2[rownames(results_translation2) %in% gene_tRNA, ],
+  # Ajouter les contours noirs pour les gènes tRNA
+  geom_point(data = results_translation2[results_translation2$Geneid %in% gene_tRNA, ],
              aes(x = log2(baseMean), y = log2FoldChange),
              shape = 21, size = 2, color = "black", fill = NA, stroke = 1.2) +
+  # Ajouter les segments entre les gènes et les noms
+  geom_segment(data = results_translation2[results_translation2$GeneName %in% a_afficher, ],
+               aes(x = log2(baseMean), y = log2FoldChange, 
+                   xend = log2(baseMean) + 0.2, yend = log2FoldChange + 0.2),
+               color = "black", size = 0.7) +
+  # Ajouter les noms des gènes
+  geom_text(data = results_translation2[results_translation2$GeneName %in% a_afficher, ],
+            aes(label = GeneName),
+            size = 4, vjust = -0.5, hjust = 0, nudge_x = 0.2, nudge_y = 0.2, color = "black") +
   geom_hline(yintercept = 0, linetype = "dotted", color = "grey20", size = 0.8) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
-  labs(title = "Log2 Fold Change vs Mean Counts\n analyse done only on all genes",
+  labs(title = "Log2 Fold Change vs Mean Counts\n analyse done on all genes",
        x = "log2(Mean Counts)",
        y = "Log2 Fold Change",
        color = "Significant") +
   theme_minimal() +
   theme(legend.position = "right",
         panel.border = element_rect(color = "grey20", fill = NA, size = 1))
+
 ggsave(MAplot_translation_file2, dpi = 300, width = 7.3, height = 6)
