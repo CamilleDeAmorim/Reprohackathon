@@ -130,7 +130,6 @@ ggsave(MAplot_file, dpi = 300, width = 10, height = 6)
 
 ## version 1 : en refaisant toute l'analyse juste pour ce set de gènes ##
 counts_matrix_translation <- counts_matrix[rownames(counts_matrix) %in% gene_translation,] 
-
 # Analyse
 dds_trans <- DESeqDataSetFromMatrix(countData = counts_matrix_translation,
                                     colData = coldata,
@@ -140,6 +139,7 @@ results_translation <- results(dds_trans)
 results_translation <- as.data.frame(results_translation)
 results_translation$Geneid <- row.names(results_translation)
 results_translation <- na.omit(results_translation) #retirer les valeurs NA
+
 
 results_translation$significant <- results_translation$padj < 0.05  # Identifier les gènes significatifs
 results_translation <- merge(results_translation, gene_corres, by = "Geneid", all.x=TRUE, all.y=F) #ajouter les noms des gènes
@@ -208,3 +208,43 @@ ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
         panel.border = element_rect(color = "grey20", fill = NA, size = 1))
 
 ggsave(MAplot_translation_file2, dpi = 300, width = 7.3, height = 6)
+
+
+#### Histogramme des p-valeurs ####
+
+# Générer l'histogramme des p-valeurs
+pvalue_histogram <- ggplot(results, aes(x = pvalue)) +
+  geom_histogram(binwidth = 0.01, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution des p-valeurs",
+       x = "p-valeur",
+       y = "Fréquence") +
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA, size = 1),
+        legend.position = "none")
+
+# Sauvegarder l'histogramme en PNG
+histogram_file <- paste(results_directory, "/Pvalue_histogram.png", sep = "")
+ggsave(histogram_file, plot = pvalue_histogram, dpi = 300, width = 8, height = 6)
+
+
+## Récupérer les gènes sur/sous exprimés pour l'analyse ACP
+############################################################
+# Filtrer les gènes up-regulated
+upregulated_genes <- subset(results_translation2, group == "Upregulated")
+
+# Filtrer les gènes down-regulated
+downregulated_genes <- subset(results_translation2, group == "Downregulated")
+
+# Définir les chemins des fichiers de sortie
+output_upregulated <- "results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt"
+output_downregulated <- "results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt"
+
+# Sauvegarder les listes dans des fichiers texte
+write.table(upregulated_genes$geneID, file = output_upregulated, 
+            row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+write.table(downregulated_genes$geneID, file = output_downregulated, 
+            row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+
+
