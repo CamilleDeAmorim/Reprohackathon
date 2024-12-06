@@ -109,7 +109,7 @@ rule Download_KEGG_Genes:
         "assets/tRNA_synthetases_genes.txt",
         "assets/translation_genes.txt"
     container:
-        "ihttps://zenodo.org/records/14288479/files/RStudio_v3.4.1_DESeq2_v1.16.1.img?download=1"
+        "https://zenodo.org/records/14288479/files/RStudio_version4.3.1_FactoMiner_Factoextra_ggplot2.img?download=1"
     shell:
         """
         Rscript bin/Download_KEGG_Genes.R
