@@ -10,9 +10,9 @@ Prepared by :
 A Snakemake workflow that reproduces the results of the scientific article (https://www.nature.com/articles/s41467-020-15966-7).
 
 # 2- Usage :
-First clone the project in your repository using :
-```git clone https://github.com/CamilleDeAmorim/Reprohackathon.git```
-Then, launch the pipeline by running the following command:
+First clone the project in your repository using :  
+```git clone https://github.com/CamilleDeAmorim/Reprohackathon.git```  
+Then, launch the pipeline by running the following command:  
 ```snakemake -s Snakefile --cores <number_of_cores> --use-apptainer```
 
 # 3 - How does it work ?
