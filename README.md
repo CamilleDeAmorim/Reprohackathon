@@ -19,7 +19,7 @@ snakemake -s Snakefile --cores <number_of_cores> --use-apptainer
 The pipeline implements a reproducible workflow for RNA-seq data analysis based on the methods described in the referenced scientific article.
 
 <div align="center">
-    <img src="Workflow_Diagram/rulegraph.png" alt="Workflow Diagram" width="300">
+    <img src="Workflow_Diagram/rulegraph.png" alt="Workflow Diagram" width="400">
 </div>
 
 It begins by downloading raw FASTQ files using fasterq-dump (version 3.1.1) and trimming low-quality bases (below a quality score of 20) using Cutadapt (version 1.11), retaining reads with a minimum length of 25 bases. The reference genome and annotation files are downloaded in FASTA and GFF formats, respectively. 
