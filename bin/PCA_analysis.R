@@ -14,6 +14,10 @@ counts_file <- args[1]
 results_directory <- args[2]
 upregulated_genes=args[3]
 downregulated_genes=args[4]
+if (!dir.exists(results_directory)) {
+  dir.create(results_directory, recursive = TRUE) 
+  cat("Directory created:", results_directory, "\n")
+}
 # Define the output PDF path
 output_pdf <- paste0(results_directory, "/Supplementary_analysis.pdf")
 
@@ -56,6 +60,7 @@ pdf(output_pdf, width = 10, height = 8)
 #PCA Plot with ggplot2 for samples
 ###################################
 transposed_matrix <- t(countDataNumeric)  # Transpose the data (samples as rows)
+
 pca <- PCA(transposed_matrix, graph = FALSE)  # Use PCA from FactoMineR
 pca_data <- as.data.frame(pca$ind$coord)  # Extract PCA coordinates
 pca_data$Group <- groups                  # Add group information
@@ -177,6 +182,8 @@ downregulated_genes <- read.table(downregulated_genes, stringsAsFactors = FALSE)
 
 # Annotate genes with "Upregulated", "Downregulated", or "Neutral"
 countDataNumeric$group <- "Neutral"  # Default to "Neutral"
+rownames(countDataNumeric) <- gsub("^gene-", "", rownames(countDataNumeric))
+
 countDataNumeric$group[rownames(countDataNumeric) %in% upregulated_genes] <- "Upregulated"
 countDataNumeric$group[rownames(countDataNumeric) %in% downregulated_genes] <- "Downregulated"
 
@@ -188,7 +195,8 @@ data_for_pca <- filtered_data[, !colnames(filtered_data) %in% "group"]
 
 # Perform PCA
 pca_genes <- prcomp(scale(data_for_pca), center = TRUE)
-
+dim(data_for_pca)  # Dimensions de la matrice
+head(rownames(data_for_pca))  # Noms des lignes (gènes ou échantillons ?)
 # Calculate the percentage of explained variance for PC1 and PC2
 explained_variance <- round(summary(pca_genes)$importance[2, 1:2] * 100, 1)  # Variance for PC1 and PC2
 x_label <- paste0("Principal Component 1 (", explained_variance[1], "%)")
@@ -220,21 +228,23 @@ ggplot(pca_coords, aes(x = PC1, y = PC2, color = group)) +
   )
 
 
-# Calculate the contributions of genes to PC1
-loadings <- pca_genes$rotation[, "PC1"]  # Loadings for PC1
-contributions <- (loadings^2) / sum(loadings^2) * 100  # Contribution in percentage
+# extract scores for PC1
+scores <- pca_genes$x[, "PC1"]
 
-# Create a data frame for plotting
+# contrib to genes for PC1
+contributions <- (scores^2) / sum(scores^2) * 100  # Contributions en pourcentage
+
+# create df for contributions
 contrib_df <- data.frame(
-  Gene = rownames(filtered_data),
+  Gene = rownames(filtered_data),  # Les gènes sont dans les lignes de filtered_data
   Contribution = contributions,
-  group = filtered_data$group  # Add group annotation (Upregulated/Downregulated)
+  group = filtered_data$group      # Ajouter l'annotation de groupe
 )
 
-# Sort contributions in descending order
+
 contrib_df <- contrib_df[order(-contrib_df$Contribution), ]
 
-# Optional: Filter the top 20 contributors
+# Top 20 contributors
 top_contrib <- contrib_df[1:20, ]
 
 # Plot contributions to PC1
@@ -255,43 +265,45 @@ ggplot(top_contrib, aes(x = reorder(Gene, -Contribution), y = Contribution, fill
     axis.text = element_text(size = 10),
     legend.position = "top"
   )
-# Contribution of genes in the second component (PC2)
+# Extract scores for PC2
+scores_pc2 <- pca_genes$x[, "PC2"]
 
-# Calculate the contributions of genes to PC2
-loadings_pc2 <- pca_genes$rotation[, "PC2"]  # Loadings for PC2
-contributions_pc2 <- (loadings_pc2^2) / sum(loadings_pc2^2) * 100  # Contribution in percentage
+# Calculate contributions of genes to PC2
+contributions_pc2 <- (scores_pc2^2) / sum(scores_pc2^2) * 100  # Contributions in percentage
 
-# Create a data frame for plotting contributions to PC2
+# Create a data frame for PC2 contributions
 contrib_df_pc2 <- data.frame(
-  Gene = rownames(filtered_data),
+  Gene = rownames(filtered_data),  # Genes are in the rows of filtered_data
   Contribution = contributions_pc2,
-  group = filtered_data$group  # Add group annotation (Upregulated/Downregulated)
+  group = filtered_data$group      # Add group annotation (Upregulated/Downregulated)
 )
 
-# Sort contributions in descending order
+# Sort contributions in descending order for PC2
 contrib_df_pc2 <- contrib_df_pc2[order(-contrib_df_pc2$Contribution), ]
 
-# Optional: Filter the top 20 contributors
+# Optional: Select the top 20 contributors for PC2
 top_contrib_pc2 <- contrib_df_pc2[1:20, ]
 
-# Plot contributions to PC2
+
+
 ggplot(top_contrib_pc2, aes(x = reorder(Gene, -Contribution), y = Contribution, fill = group)) +
-  geom_bar(stat = "identity", color = "black", alpha = 0.8, width = 0.6) +  # Adjust bar width here
-  scale_fill_manual(values = c("Upregulated" = "red", "Downregulated" = "black")) +
+  geom_bar(stat = "identity", color = "black", alpha = 0.8, width = 0.6) +  # Create bar plot
+  scale_fill_manual(values = c("Upregulated" = "red", "Downregulated" = "gray")) +  # Custom colors
   labs(
-    title = "Top 20 Translation Genes Contributing to PC2",
-    x = "Genes",
-    y = "Contribution (%)",
-    fill = "Gene Status"
+    title = "Top 20 Contributors to PC2",  # Title of the plot
+    x = "Genes",  # X-axis label
+    y = "Contribution (%)",  # Y-axis label
+    fill = "Gene Status"  # Legend title
   ) +
-  theme_minimal() +
+  theme_minimal() +  # Minimal theme for clean aesthetics
   theme(
-    axis.text.x = element_text(angle = 90, hjust = 1, size = 8),
-    plot.title = element_text(hjust = 0.5, size = 14),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10),
-    legend.position = "top"
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 8),  # Rotate x-axis labels for readability
+    plot.title = element_text(hjust = 0.5, size = 14),  # Center-align the title
+    axis.title = element_text(size = 12),  # Set axis title size
+    axis.text = element_text(size = 10),  # Set axis text size
+    legend.position = "top"  # Move legend to the top
   )
+
 # Close the PDF device
 dev.off()
 

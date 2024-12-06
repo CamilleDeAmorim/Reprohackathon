@@ -7,7 +7,7 @@ default_args = c("results/06_Counting_results/counts.txt", #fichier de comptage
                "assets/translation_genes.txt", #fichier avec gènes liés traduction
                "assets/tRNA_synthetases_genes.txt", # fichier avec gènes lié tRNA
                "assets/GeneSpecificInformation_NCTC8325.txt", #fichier de correspondance des noms de gènes
-               "results/07_Final_results/") # dossier pour les résultats
+               "results/07_Final_results/DESeq2_Results/") # dossier pour les résultats
 
 # test if there are arguments ; if not by default arguments are used
 if (length(args)<length(default_args)) {  
@@ -24,6 +24,10 @@ volcano_file = paste(results_directory,"Volcano_plot.png", sep = "")
 MAplot_file = paste(results_directory,"MA_plot.png", sep = "")
 MAplot_translation_file1 = paste(results_directory,"MA_plot_translation1.png", sep = "")
 MAplot_translation_file2 = paste(results_directory,"MA_plot_translation2.png", sep = "")
+if (!dir.exists(results_directory)) {
+  dir.create(results_directory, recursive = TRUE) 
+  cat("Directory created:", results_directory, "\n")
+}
 
 #### Chargement données et librairies ####
 library(DESeq2)
@@ -240,10 +244,10 @@ output_upregulated <- "results/07_Final_results/DESeq2_Results/upregulated_trans
 output_downregulated <- "results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt"
 
 # Sauvegarder les listes dans des fichiers texte
-write.table(upregulated_genes$geneID, file = output_upregulated, 
+write.table(upregulated_genes$Geneid, file = output_upregulated, 
             row.names = FALSE, col.names = FALSE, quote = FALSE)
 
-write.table(downregulated_genes$geneID, file = output_downregulated, 
+write.table(downregulated_genes$Geneid, file = output_downregulated, 
             row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 
