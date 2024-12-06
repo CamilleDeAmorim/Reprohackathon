@@ -16,7 +16,8 @@ rule all:
         "results/07_Final_results/DESeq2_Results/MA_plot.png",
         "results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
         "results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
-        "results/07_Final_results/DESeq2_Results/Volcano_plot.png"
+        "results/07_Final_results/DESeq2_Results/Volcano_plot.png",
+        "results/07_Final_results/Supplementary_results/Supplementary_analysis.pdf"
              
 # Rule that downloads the FASTQ files.
 rule fasterq_dump:
@@ -128,7 +129,8 @@ rule DESeq2_analysis:
     input:
         counts="results/06_Counting_results/counts.txt",
         translation_genes="assets/translation_genes.txt",
-        tRNA_genes="assets/tRNA_synthetases_genes.txt"
+        tRNA_genes="assets/tRNA_synthetases_genes.txt",
+        correspondance_genes="assets/GeneSpecificInformation_NCTC8325.txt"
     output:
         ma_plot="results/07_Final_results/DESeq2_Results/MA_plot.png",
         ma_plot_translation1="results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
@@ -138,5 +140,18 @@ rule DESeq2_analysis:
         "images/DESeq2_v1.16.1.img"
     shell:
         """
-        Rscript bin/DESeq2_analysis.R {input.counts} {input.translation_genes} {input.tRNA_genes} results/07_Final_results/DESeq2_Results/
+        Rscript bin/DESeq2_analysis.R {input.counts} {input.translation_genes} {input.tRNA_genes} {input.correspondance_genes} results/07_Final_results/DESeq2_Results/
+        """
+rule PCA_analysis:
+    input : 
+         counts="results/06_Counting_results/counts.txt",
+         upregulated_genes="results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt",
+         downregulated_genes="results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt"
+    output:
+        "results/07_Final_results/Supplementary_results/Supplementary_analysis.pdf"
+    container:
+        "images/R_new_version.img"
+    shell:
+        """
+        Rscript bin/PCA_analysis.R {input.counts} results/07_Final_results/Supplementary_results/ {input.upregulated_genes} {input.downregulated_genes}
         """
