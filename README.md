@@ -14,8 +14,9 @@ To launch the pipeline, run the following command:
 snakemake -s Snakefile --cores <number_of_cores> --use-apptainer
 
 # 3 - How does it work ?
-The pipeline implements a reproducible workflow for RNA-seq data analysis based on the methods described in the referenced scientific article. 
-<img src="Workflow_Diagram/rulegraph.png" alt="Workflow Diagram" width="400">
+The pipeline implements a reproducible workflow for RNA-seq data analysis based on the methods described in the referenced scientific article.
+
+<img src="Workflow_Diagram/rulegraph.png" alt="Workflow Diagram" width="300">
 
 It begins by downloading raw FASTQ files using fasterq-dump (version 3.1.1) and trimming low-quality bases (below a quality score of 20) using Cutadapt (version 1.11), retaining reads with a minimum length of 25 bases. The reference genome and annotation files are downloaded in FASTA and GFF formats, respectively. 
 Reads are aligned to the reference genome using Bowtie (version 0.12.7), and alignment files are processed into BAM format using Samtools (version 1.21). 
