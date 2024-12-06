@@ -11,9 +11,9 @@ A Snakemake workflow that reproduces the results of the scientific article (http
 
 # 2- Usage :
 First clone the project in your repository using :
-git clone https://github.com/CamilleDeAmorim/Reprohackathon.git
+```git clone https://github.com/CamilleDeAmorim/Reprohackathon.git```
 Then, launch the pipeline by running the following command:
-snakemake -s Snakefile --cores <number_of_cores> --use-apptainer
+```snakemake -s Snakefile --cores <number_of_cores> --use-apptainer```
 
 # 3 - How does it work ?
 The pipeline implements a reproducible workflow for RNA-seq data analysis based on the methods described in the referenced scientific article.
