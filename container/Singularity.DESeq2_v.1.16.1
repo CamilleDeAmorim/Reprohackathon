@@ -2,7 +2,6 @@ Bootstrap: docker
 From: rocker/tidyverse:3.4.1
 
 %post
-    # Installer les dépendances nécessaires pour DESeq2 et ses packages R
     apt-get update && apt-get install -y libxml2-dev libcurl4-openssl-dev libssl-dev
 
     # Installer DESeq2 et ses dépendances

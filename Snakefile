@@ -17,6 +17,8 @@ rule all:
         "results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
         "results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
         "results/07_Final_results/DESeq2_Results/Volcano_plot.png",
+        "results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt",
+        "results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt",
         "results/07_Final_results/Supplementary_results/Supplementary_analysis.pdf"
              
 # Rule that downloads the FASTQ files.
@@ -135,7 +137,9 @@ rule DESeq2_analysis:
         ma_plot="results/07_Final_results/DESeq2_Results/MA_plot.png",
         ma_plot_translation1="results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
         ma_plot_translation2="results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
-        volcano_plot="results/07_Final_results/DESeq2_Results/Volcano_plot.png"
+        volcano_plot="results/07_Final_results/DESeq2_Results/Volcano_plot.png",
+        upreg_genes="results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt",
+        downreg_genes="results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt"
     container:
         "images/DESeq2_v1.16.1.img"
     shell:
