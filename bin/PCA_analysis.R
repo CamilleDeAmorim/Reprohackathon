@@ -1,5 +1,4 @@
 #!/usr/bin/env Rscript
-
 # Retrieve command line arguments or use default values
 args <- commandArgs(trailingOnly = TRUE)
 default_args <- c("results/06_Counting_results/counts.txt", 
