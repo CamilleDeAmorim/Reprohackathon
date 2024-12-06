@@ -3,16 +3,6 @@ reference_suffixes = ["1", "2", "3", "4", "rev.1", "rev.2"]
 
 rule all: 
     input:
-        expand("results/01_raw_data/{SRA_id}.fastq.gz", SRA_id=Samples),
-        expand("results/02_Trimming_results/{SRA_id}_trimmed.fastq.gz", SRA_id=Samples),
-        "results/03_Reference_Genome/reference.fasta", 
-        "results/04_Genome_Annotation/reference.gff",
-        expand("results/03_Reference_Genome/reference.{suffixe}.ebwt", suffixe=reference_suffixes),
-        expand("results/05_Mapping_results/{SRA_id}.bam", SRA_id=Samples),
-        expand("results/05_Mapping_results/{SRA_id}.bai", SRA_id=Samples),
-        "results/06_Counting_results/counts.txt",
-        "assets/tRNA_synthetases_genes.txt",
-        "assets/translation_genes.txt",
         "results/07_Final_results/DESeq2_Results/MA_plot.png",
         "results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
         "results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
