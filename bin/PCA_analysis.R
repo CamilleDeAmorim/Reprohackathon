@@ -2,9 +2,7 @@
 # Retrieve command line arguments or use default values
 args <- commandArgs(trailingOnly = TRUE)
 default_args <- c("results/06_Counting_results/counts.txt", 
-                  "results/07_Final_results/Supplementary_results",
-                  "results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt",
-                  "results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt")
+                  "results/07_Final_results/Supplementary_results")
 
 if (length(args) < 4) {  
     args[length(args) + 1:4] <- default_args[length(args) + 1:4]
@@ -12,8 +10,6 @@ if (length(args) < 4) {
 
 counts_file <- args[1]
 results_directory <- args[2]
-upregulated_genes=args[3]
-downregulated_genes=args[4]
 if (!dir.exists(results_directory)) {
   dir.create(results_directory, recursive = TRUE) 
   cat("Directory created:", results_directory, "\n")
@@ -172,138 +168,6 @@ print(ggplot(eig_data, aes(x = Axes, y = Inertia)) +
         axis.title = element_text(size = 12),
         axis.text = element_text(size = 10)
     ))
-#########################################################
-#PCA Plot for upregulated/downregulated translation genes
-###########################################################
-
-# Load the lists of genes
-upregulated_genes <- read.table(upregulated_genes, stringsAsFactors = FALSE)$V1
-downregulated_genes <- read.table(downregulated_genes, stringsAsFactors = FALSE)$V1
-
-# Annotate genes with "Upregulated", "Downregulated", or "Neutral"
-countDataNumeric$group <- "Neutral"  # Default to "Neutral"
-rownames(countDataNumeric) <- gsub("^gene-", "", rownames(countDataNumeric))
-
-countDataNumeric$group[rownames(countDataNumeric) %in% upregulated_genes] <- "Upregulated"
-countDataNumeric$group[rownames(countDataNumeric) %in% downregulated_genes] <- "Downregulated"
-
-# Filter only "Upregulated" and "Downregulated" genes
-filtered_data <- countDataNumeric[countDataNumeric$group %in% c("Upregulated", "Downregulated"), ]
-
-# Remove the "group" column for PCA
-data_for_pca <- filtered_data[, !colnames(filtered_data) %in% "group"]
-
-# Perform PCA
-pca_genes <- prcomp(scale(data_for_pca), center = TRUE)
-dim(data_for_pca)  # Dimensions de la matrice
-head(rownames(data_for_pca))  # Noms des lignes (gènes ou échantillons ?)
-# Calculate the percentage of explained variance for PC1 and PC2
-explained_variance <- round(summary(pca_genes)$importance[2, 1:2] * 100, 1)  # Variance for PC1 and PC2
-x_label <- paste0("Principal Component 1 (", explained_variance[1], "%)")
-y_label <- paste0("Principal Component 2 (", explained_variance[2], "%)")
-
-
-# Extract PCA coordinates
-pca_coords <- as.data.frame(pca_genes$x)
-pca_coords$Gene <- rownames(filtered_data)  # Assign gene names
-pca_coords$group <- filtered_data$group     # Add "group" column
-
-# Create the PCA plot
-ggplot(pca_coords, aes(x = PC1, y = PC2, color = group)) +
-  geom_point(size = 2, alpha = 0.8) +
-  scale_color_manual(values = c("Upregulated" = "red", 
-                                "Downregulated" = "grey")) +
-  labs(
-    title = "PCA of Up- and Down-regulated Genes",
-    x = x_label,
-    y = y_label,
-    color = "Gene Status"
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "right",
-    plot.title = element_text(hjust = 0.5, size = 14),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10)
-  )
-
-
-# extract scores for PC1
-scores <- pca_genes$x[, "PC1"]
-
-# contrib to genes for PC1
-contributions <- (scores^2) / sum(scores^2) * 100  # Contributions en pourcentage
-
-# create df for contributions
-contrib_df <- data.frame(
-  Gene = rownames(filtered_data),  # Les gènes sont dans les lignes de filtered_data
-  Contribution = contributions,
-  group = filtered_data$group      # Ajouter l'annotation de groupe
-)
-
-
-contrib_df <- contrib_df[order(-contrib_df$Contribution), ]
-
-# Top 20 contributors
-top_contrib <- contrib_df[1:20, ]
-
-# Plot contributions to PC1
-ggplot(top_contrib, aes(x = reorder(Gene, -Contribution), y = Contribution, fill = group)) +
-  geom_bar(stat = "identity", color = "black", alpha = 0.8,width=0.6) +
-  scale_fill_manual(values = c("Upregulated" = "red", "Downregulated" = "black")) +
-  labs(
-    title = "Top 20 Contributors to PC1",
-    x = "Genes",
-    y = "Contribution (%)",
-    fill = "Gene Status"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1, size = 8),
-    plot.title = element_text(hjust = 0.5, size = 14),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10),
-    legend.position = "top"
-  )
-# Extract scores for PC2
-scores_pc2 <- pca_genes$x[, "PC2"]
-
-# Calculate contributions of genes to PC2
-contributions_pc2 <- (scores_pc2^2) / sum(scores_pc2^2) * 100  # Contributions in percentage
-
-# Create a data frame for PC2 contributions
-contrib_df_pc2 <- data.frame(
-  Gene = rownames(filtered_data),  # Genes are in the rows of filtered_data
-  Contribution = contributions_pc2,
-  group = filtered_data$group      # Add group annotation (Upregulated/Downregulated)
-)
-
-# Sort contributions in descending order for PC2
-contrib_df_pc2 <- contrib_df_pc2[order(-contrib_df_pc2$Contribution), ]
-
-# Optional: Select the top 20 contributors for PC2
-top_contrib_pc2 <- contrib_df_pc2[1:20, ]
-
-
-
-ggplot(top_contrib_pc2, aes(x = reorder(Gene, -Contribution), y = Contribution, fill = group)) +
-  geom_bar(stat = "identity", color = "black", alpha = 0.8, width = 0.6) +  # Create bar plot
-  scale_fill_manual(values = c("Upregulated" = "red", "Downregulated" = "gray")) +  # Custom colors
-  labs(
-    title = "Top 20 Contributors to PC2",  # Title of the plot
-    x = "Genes",  # X-axis label
-    y = "Contribution (%)",  # Y-axis label
-    fill = "Gene Status"  # Legend title
-  ) +
-  theme_minimal() +  # Minimal theme for clean aesthetics
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1, size = 8),  # Rotate x-axis labels for readability
-    plot.title = element_text(hjust = 0.5, size = 14),  # Center-align the title
-    axis.title = element_text(size = 12),  # Set axis title size
-    axis.text = element_text(size = 10),  # Set axis text size
-    legend.position = "top"  # Move legend to the top
-  )
-
 # Close the PDF device
 dev.off()
 

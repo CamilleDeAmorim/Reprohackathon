@@ -214,41 +214,37 @@ ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
 ggsave(MAplot_translation_file2, dpi = 300, width = 7.3, height = 6)
 
 
-#### Histogramme des p-valeurs ####
+####################################
+# Generating Histograms for p-values
+####################################
 
-# Générer l'histogramme des p-valeurs
+
+# p-values histogram for all the genes
+
 pvalue_histogram <- ggplot(results, aes(x = pvalue)) +
   geom_histogram(binwidth = 0.01, fill = "blue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution des p-valeurs",
-       x = "p-valeur",
-       y = "Fréquence") +
+  labs(title = "Distribution of p-values",
+       x = "p-value",
+       y = "Frequency") +
   theme_minimal() +
   theme(panel.border = element_rect(color = "black", fill = NA, size = 1),
         legend.position = "none")
-
-# Sauvegarder l'histogramme en PNG
-histogram_file <- paste(results_directory, "/Pvalue_histogram.png", sep = "")
+# save the figure
+histogram_file <- paste(results_directory, "/pvalues_histogram_all_genes.png", sep = "")
 ggsave(histogram_file, plot = pvalue_histogram, dpi = 300, width = 8, height = 6)
 
+# p-values histogram for translation genes
 
-## Récupérer les gènes sur/sous exprimés pour l'analyse ACP
-############################################################
-# Filtrer les gènes up-regulated
-upregulated_genes <- subset(results_translation2, group == "Upregulated")
-
-# Filtrer les gènes down-regulated
-downregulated_genes <- subset(results_translation2, group == "Downregulated")
-
-# Définir les chemins des fichiers de sortie
-output_upregulated <- "results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt"
-output_downregulated <- "results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt"
-
-# Sauvegarder les listes dans des fichiers texte
-write.table(upregulated_genes$Geneid, file = output_upregulated, 
-            row.names = FALSE, col.names = FALSE, quote = FALSE)
-
-write.table(downregulated_genes$Geneid, file = output_downregulated, 
-            row.names = FALSE, col.names = FALSE, quote = FALSE)
-
+pvalue_histogram_2 <- ggplot(results_translation, aes(x = pvalue)) +
+  geom_histogram(binwidth = 0.01, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of p-values for translation genes",
+       x = "p-value",
+       y = "Frequency") +
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA, size = 1),
+        legend.position = "none")
+# save the figure
+histogram_file_2 <- paste(results_directory, "/pvalues_histogram_translation_genes.png", sep = "")
+ggsave(histogram_file_2, plot = pvalue_histogram_2, dpi = 300, width = 8, height = 6)
 
 

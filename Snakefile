@@ -7,10 +7,7 @@ rule all:
         "results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
         "results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
         "results/07_Final_results/DESeq2_Results/Volcano_plot.png",
-        "results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt",
-        "results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt",
         "results/07_Final_results/Supplementary_results/Supplementary_analysis.pdf"
-             
 # Rule that downloads the FASTQ files.
 rule fasterq_dump:
     output:
@@ -19,7 +16,7 @@ rule fasterq_dump:
         "https://zenodo.org/records/13994690/files/fasterq-dump.img?download=1"
     log:
         "logs/fasterq-dump/{SRA_id}.log"
-    threads: 20
+    threads: 5
     shell:
         """
         fasterq-dump --threads {threads} --progress {wildcards.SRA_id} -O results/01_raw_data/ &> {log}
@@ -36,7 +33,7 @@ rule cutadapt:
         "https://zenodo.org/records/13994994/files/cutadapt_v1.11.img?download=1"
     log:
         "logs/cutadapt/{SRA_id}_trimmed.log"
-    threads: 20
+    threads: 5
     shell:
         """
         cutadapt -o results/02_Trimming_results/{wildcards.SRA_id}_trimmed.fastq.gz {input} -a AGATCGGAAGAGC -q 20 -m 25 > results/02_Trimming_results/{wildcards.SRA_id}_trimming_report.txt
@@ -84,7 +81,7 @@ rule mapping:
         bai = "results/05_Mapping_results/{SRA_id}.bai"
     container:
         "https://zenodo.org/records/13994994/files/bowtie_v0.12.7_samtools.img?download=1"
-    threads: 8
+    threads: 4
     shell: 
         """
         bowtie -p {threads} -S results/03_Reference_Genome/reference <(gunzip -c {input.fastq_files}) | samtools sort -@ {threads} -o {output.bam}
@@ -102,7 +99,7 @@ rule counting:
         "https://zenodo.org/records/13994994/files/featureCounts_v1.4.6-p3.img?download=1"
     log: 
         "logs/counting.log"
-    threads: 20
+    threads: 2
     shell:
         """
         featureCounts -t gene -g ID -s 1 -T {threads} -a {input.genome_annotation} -o {output} {input.bamf}
@@ -112,7 +109,7 @@ rule Download_KEGG_Genes:
         "assets/tRNA_synthetases_genes.txt",
         "assets/translation_genes.txt"
     container:
-        "images/R_new_version.img"
+        "ihttps://zenodo.org/records/14288479/files/RStudio_v3.4.1_DESeq2_v1.16.1.img?download=1"
     shell:
         """
         Rscript bin/Download_KEGG_Genes.R
@@ -128,10 +125,9 @@ rule DESeq2_analysis:
         ma_plot_translation1="results/07_Final_results/DESeq2_Results/MA_plot_translation1.png",
         ma_plot_translation2="results/07_Final_results/DESeq2_Results/MA_plot_translation2.png",
         volcano_plot="results/07_Final_results/DESeq2_Results/Volcano_plot.png",
-        upreg_genes="results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt",
-        downreg_genes="results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt"
+        
     container:
-        "images/DESeq2_v1.16.1.img"
+        "https://zenodo.org/records/14288479/files/RStudio_v3.4.1_DESeq2_v1.16.1.img?download=1"
     shell:
         """
         Rscript bin/DESeq2_analysis.R {input.counts} {input.translation_genes} {input.tRNA_genes} {input.correspondance_genes} results/07_Final_results/DESeq2_Results/
@@ -139,13 +135,11 @@ rule DESeq2_analysis:
 rule PCA_analysis:
     input : 
          counts="results/06_Counting_results/counts.txt",
-         upregulated_genes="results/07_Final_results/DESeq2_Results/upregulated_translation_genes.txt",
-         downregulated_genes="results/07_Final_results/DESeq2_Results/downregulated_translation_genes.txt"
     output:
         "results/07_Final_results/Supplementary_results/Supplementary_analysis.pdf"
     container:
-        "images/R_new_version.img"
+        "https://zenodo.org/records/14288479/files/RStudio_version4.3.1_FactoMiner_Factoextra_ggplot2.img?download=1"
     shell:
         """
-        Rscript bin/PCA_analysis.R {input.counts} results/07_Final_results/Supplementary_results/ {input.upregulated_genes} {input.downregulated_genes}
+        Rscript bin/PCA_analysis.R {input.counts} results/07_Final_results/Supplementary_results/ 
         """
