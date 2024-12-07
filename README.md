@@ -27,8 +27,7 @@ Reads are aligned to the reference genome using Bowtie (version 0.12.7), and ali
 
 Feature counting is performed with FeatureCounts (version 1.4.6-p3). The resulting counting matrix is analyzed by differential expression analysis using R (version 3.4.1) and the DESeq2 package (version 1.16). 
 
-The supplementary PCA analysis was performed on the samples, focusing on translation genes that were upregulated or downregulated. 
-This analysis was conducted using R (version 4.3.1), along with the FactoMiner package (version 2.11), FactoExtra package (version 1.0.7), and ggplot2 package (version 3.5.1).
+The supplementary PCA analysis was performed on the samples. This analysis was conducted using R (version 4.3.1), along with the FactoMiner package (version 2.11), FactoExtra package (version 1.0.7), and ggplot2 package (version 3.5.1).
 
 This workflow ensures reproducibility and standardization for RNA-seq data processing and analysis.
 
