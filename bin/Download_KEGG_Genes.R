@@ -18,7 +18,7 @@ suppressMessages({
   genesList00970 = gsub("sao:","", keggLink("sao00970")[-1,2])
 })
 
-#impossible de récupérer sao03012 avec keggLink : besoin de passer par une autre méthode
+# Impossible to retrieve sao03012 with keggLink: need to use another method.
 brite_raw <- keggGet("br:sao03012")[[1]]
 brite_data <- strsplit(brite_raw, "\n")
 
