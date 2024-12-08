@@ -2,12 +2,12 @@
 rm(list=ls())
 args = commandArgs(trailingOnly=TRUE)
 
-#arguments par défaut 
-default_args = c("results/06_Counting_results/counts.txt", #fichier de comptage
-               "assets/translation_genes.txt", #fichier avec gènes liés traduction
-               "assets/tRNA_synthetases_genes.txt", # fichier avec gènes lié tRNA
-               "assets/GeneSpecificInformation_NCTC8325.txt", #fichier de correspondance des noms de gènes
-               "results/07_Final_results/DESeq2_Results/") # dossier pour les résultats
+# arguments by default 
+default_args = c("results/06_Counting_results/counts.txt", # counting file
+               "assets/translation_genes.txt", # file containing translation genes
+               "assets/tRNA_synthetases_genes.txt", # file containing tRNA synthetases genes
+               "assets/GeneSpecificInformation_NCTC8325.txt", # Correspondance file code - symbol of gene
+               "results/07_Final_results/DESeq2_Results/") # results directory
 
 # test if there are arguments ; if not by default arguments are used
 if (length(args)<length(default_args)) {  
@@ -29,7 +29,7 @@ if (!dir.exists(results_directory)) {
   cat("Directory created:", results_directory, "\n")
 }
 
-#### Chargement données et librairies ####
+#### installation of data and required libraries ####
 library(DESeq2)
 library(ggplot2)
 counts_data <- read.table(counts_file, skip = 1, header = T, sep = '\t')
@@ -41,49 +41,49 @@ colnames(gene_corres) <- c("Geneid", "GeneName")
 
 a_afficher <- c("frr", "infA", "infB", "infC", "tsf", "pth")
 
-## Mise en forme données ##
-# Sélection des colonnes nécessaires
+## Data formatting ##
+# Selecting necessary data
 counts_matrix <- counts_data[, 7:ncol(counts_data)] 
-# Utiliser 'Geneid' comme noms de lignes
+# Use 'Geneid" for row names
 counts_data$Geneid <- gsub("gene-","", counts_data$Geneid)
 rownames(counts_matrix) <- counts_data$Geneid
 
-#  Tableau des conditions
-# les trois premiers échantillons sont la condition test, les trois suivants le contrôle
+#  Table of conditions
+# The first 3 samples are persisters, the others are control samples 
 conditions <- factor(c(rep("2", 3), rep("1", 3)))
 coldata <- data.frame(row.names = colnames(counts_matrix), condition = conditions)
 
-#création d'un objet DESeq2
+# Creation of DESeq2 object 
 dds <- DESeqDataSetFromMatrix(countData = counts_matrix,
                               colData = coldata,
                               design = ~ condition)
 
-#### Analyse #### 
-# Normalisation et analyse différentielle
+#### Analysis #### 
+# Normalization and differential expression
 dds <- DESeq(dds)
 results <- results(dds)
 results <- as.data.frame(results) 
 results$Geneid <- row.names(results) 
-results <- na.omit(results) #retirer les valeurs NA
+results <- na.omit(results) # removing NA values
 
-# Nombre total de gènes significatifs, sur et sous exprimés
+# Total number of genes differentially expressed, upregulated and downregulated
 n_significant <- nrow(results[results$padj < 0.05 , ])
 n_upregulated <- nrow(results[results$padj < 0.05 & results$log2FoldChange >0, ])
 n_downregulated <- nrow(results[results$padj < 0.05 & results$log2FoldChange < 0, ])
 
-cat("Nombre de gènes avec expression significativement différente :", n_significant, "\n")
-cat("Nombre de gènes sur-exprimés :", n_upregulated, "\n")
-cat("Nombre de gènes sous-exprimés :", n_downregulated, "\n")
+cat("Number of genes differentially expressed :", n_significant, "\n")
+cat("Number of upregulated genes :", n_upregulated, "\n")
+cat("Number of downregulated genes :", n_downregulated, "\n")
 
 
 #### Volcano plot ####
 
-# Groupes basés sur la significativité et la direction de l'expression
+# Groupes based on significance and the expression 
 results$group <- "Non-significant"
 results$group[results$padj < 0.05 & results$log2FoldChange > 0] <- "Upregulated"
 results$group[results$padj < 0.05 & results$log2FoldChange < 0] <- "Downregulated"
 
-# Création du volcano plot
+# Volcano plot creation
 volcano_plot <- ggplot(results, aes(x = log2FoldChange, y = -log10(padj), color = group)) +
   geom_point(alpha = 0.8, size = 2) +
   scale_color_manual(values = c("Non-significant" = "grey", 
@@ -97,14 +97,14 @@ volcano_plot <- ggplot(results, aes(x = log2FoldChange, y = -log10(padj), color 
   theme(legend.position = "right",
         panel.border = element_rect(color = "black", fill = NA, size = 1))
 
-#sauvgarde données
+#save figure
 ggsave(volcano_file, plot = volcano_plot, dpi = 300, width = 8, height = 6)
 
 
 ### MA plots ###
-results$significant <- results$padj < 0.05  # Identifier les gènes significatifs
+results$significant <- results$padj < 0.05  # identify significant genes
 
-# Ajustement des logFC pour ne pas avoir de valeurs au dessus de 4,1 ou en dessous de -4,1
+# Adjustment of logFC to constrain values within the range of -4.1 to 4.1
 results$adjusted_log2FC <- pmin(pmax(results$log2FoldChange, -4.1), 4.1)
 results$shape <- ifelse(results$log2FoldChange > 4.1, "triangle_up",
                                  ifelse(results$log2FoldChange < -4.1, "triangle_down", "circle"))
@@ -116,7 +116,7 @@ ggplot(results, aes(x = baseMean, y = adjusted_log2FC)) +
   scale_color_manual(values = c("black", "red"), 
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") + 
-  scale_fill_manual(values = c("black", "red"), guide = "none") + #guide = none : pour enlever de la légende
+  scale_fill_manual(values = c("black", "red"), guide = "none") + #guide = none : to remove legend
   scale_shape_manual(values = c("circle" = 16, "triangle_up" = 24, "triangle_down" = 25), 
                      guide = "none") + 
   scale_x_log10() +
@@ -130,11 +130,11 @@ ggplot(results, aes(x = baseMean, y = adjusted_log2FC)) +
 ggsave(MAplot_file, dpi = 300, width = 10, height = 6)
 
 
-## MA plot traduction ##
+## MA plot for translation genes##
 
-## version 1 : en refaisant toute l'analyse juste pour ce set de gènes ##
+## Version 1 : DESeq2 analysis done on the new set of genes (translation only)  ##
 counts_matrix_translation <- counts_matrix[rownames(counts_matrix) %in% gene_translation,] 
-# Analyse
+# Analysis
 dds_trans <- DESeqDataSetFromMatrix(countData = counts_matrix_translation,
                                     colData = coldata,
                                     design = ~ condition)
@@ -142,25 +142,25 @@ dds_trans <- DESeq(dds_trans)
 results_translation <- results(dds_trans)
 results_translation <- as.data.frame(results_translation)
 results_translation$Geneid <- row.names(results_translation)
-results_translation <- na.omit(results_translation) #retirer les valeurs NA
+results_translation <- na.omit(results_translation) # removing NA values
 
 
-results_translation$significant <- results_translation$padj < 0.05  # Identifier les gènes significatifs
-results_translation <- merge(results_translation, gene_corres, by = "Geneid", all.x=TRUE, all.y=F) #ajouter les noms des gènes
+results_translation$significant <- results_translation$padj < 0.05  # identifying significant genes
+results_translation <- merge(results_translation, gene_corres, by = "Geneid", all.x=TRUE, all.y=F) # Adding gene names
 
 # Plot
 ggplot(results_translation, aes(x = log2(baseMean), y = log2FoldChange)) +
   geom_point(aes(color = significant), size = 2, alpha = 0.9) +
-  # Ajouter les contours noirs pour les gènes tRNA
+  # Adding Black Outlines for tRNA Genes
   geom_point(data = results_translation[results_translation$Geneid %in% gene_tRNA, ],
              aes(x = log2(baseMean), y = log2FoldChange),
              shape = 21, size = 2, color = "black", fill = NA, stroke = 1.2) +
-  # Ajouter les segments entre les gènes et les noms
+  #Adding Segments Between Genes and Their Names
   geom_segment(data = results_translation[results_translation$GeneName %in% a_afficher, ],
                aes(x = log2(baseMean), y = log2FoldChange, 
                    xend = log2(baseMean) + 0.2, yend = log2FoldChange + 0.2),
                color = "black", size = 0.7) +
-  # Ajouter les noms des gènes
+  # Adding gene names
   geom_text(data = results_translation[results_translation$GeneName %in% a_afficher, ],
             aes(label = GeneName),
             size = 4, vjust = -0.5, hjust = 0, nudge_x = 0.2, nudge_y = 0.2, color = "black") +
@@ -168,7 +168,7 @@ ggplot(results_translation, aes(x = log2(baseMean), y = log2FoldChange)) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
-  labs(title = "Log2 Fold Change vs Mean Counts\n analyse done on all genes",
+  labs(title = "Log2 Fold Change vs Mean Counts\n DESeq2 analysis done on translation genes",
        x = "log2(Mean Counts)",
        y = "Log2 Fold Change",
        color = "Significant") +
@@ -179,23 +179,23 @@ ggplot(results_translation, aes(x = log2(baseMean), y = log2FoldChange)) +
 ggsave(MAplot_translation_file1, dpi = 300, width = 7.3, height = 6)
 
 
-## version 2 : juste en récupérant les résultats de l'analyse globale
+## version 2 : DESeq2 analysis done on all dataset, we retrieve results only for translation genes
 results_translation2 <- results[results$Geneid %in% gene_translation,]
-results_translation2 <- merge(results_translation2, gene_corres, by = "Geneid", all.x=TRUE, all.y=F) #ajouter les noms des gènes
+results_translation2 <- merge(results_translation2, gene_corres, by = "Geneid", all.x=TRUE, all.y=F) #Adding gene names
 
 # plot
 ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
   geom_point(aes(color = significant), size = 2, alpha = 0.9) +
-  # Ajouter les contours noirs pour les gènes tRNA
+  # Adding Black Outlines for tRNA Genes
   geom_point(data = results_translation2[results_translation2$Geneid %in% gene_tRNA, ],
              aes(x = log2(baseMean), y = log2FoldChange),
              shape = 21, size = 2, color = "black", fill = NA, stroke = 1.2) +
-  # Ajouter les segments entre les gènes et les noms
+  # Adding Segments Between Genes and Their Names
   geom_segment(data = results_translation2[results_translation2$GeneName %in% a_afficher, ],
                aes(x = log2(baseMean), y = log2FoldChange, 
                    xend = log2(baseMean) + 0.2, yend = log2FoldChange + 0.2),
                color = "black", size = 0.7) +
-  # Ajouter les noms des gènes
+  # Adding gene names
   geom_text(data = results_translation2[results_translation2$GeneName %in% a_afficher, ],
             aes(label = GeneName),
             size = 4, vjust = -0.5, hjust = 0, nudge_x = 0.2, nudge_y = 0.2, color = "black") +
@@ -203,7 +203,7 @@ ggplot(results_translation2, aes(x = log2(baseMean), y = log2FoldChange)) +
   scale_color_manual(values = c("grey35", "red"),
                      labels = c("Non-significant", "Significant"), 
                      name = "Gene Status") +
-  labs(title = "Log2 Fold Change vs Mean Counts\n analyse done on all genes",
+  labs(title = "Log2 Fold Change vs Mean Counts\n DESeq2 analysis done on all genes",
        x = "log2(Mean Counts)",
        y = "Log2 Fold Change",
        color = "Significant") +
@@ -223,7 +223,7 @@ ggsave(MAplot_translation_file2, dpi = 300, width = 7.3, height = 6)
 
 pvalue_histogram <- ggplot(results, aes(x = pvalue)) +
   geom_histogram(binwidth = 0.01, fill = "blue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of p-values",
+  labs(title = "Distribution of p-values for all the dataset",
        x = "p-value",
        y = "Frequency") +
   theme_minimal() +
